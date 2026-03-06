@@ -10,8 +10,8 @@ export default function DocumentoTransporte() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- 0. CONFIGURACIÓN NAVIERA (ENCABEZADO EDITABLE) ---
-  const [lineaNavieraNombre, setLineaNavieraNombre] = useState("LÍNEA OCEÁNICA");
-  const [lineaNavieraNit, setLineaNavieraNit] = useState("NIT 900.123.456-7");
+  const [lineaNavieraNombre, setLineaNavieraNombre] = useState("");
+  const [lineaNavieraNit, setLineaNavieraNit] = useState("");
   const [lineaNavieraLogo, setLineaNavieraLogo] = useState<string | null>(null); // Base64
 
   // --- 1. PARTES (ACTORES) - ESTRUCTURADOS ---
@@ -30,7 +30,7 @@ export default function DocumentoTransporte() {
   const [cPais, setCPais] = useState("");
 
   // Notificar a (Notify Party)
-  const [nRazonSocial, setNRazonSocial] = useState("IGUAL AL CONSIGNATARIO");
+  const [nRazonSocial, setNRazonSocial] = useState("");
   const [nNit, setNNit] = useState("");
   const [nContacto, setNContacto] = useState("");
   const [nCiudad, setNCiudad] = useState("");
@@ -41,19 +41,19 @@ export default function DocumentoTransporte() {
   const [portOfLoading, setPortOfLoading] = useState("");
   const [portOfDischarge, setPortOfDischarge] = useState("");
   const [placeOfDelivery, setPlaceOfDelivery] = useState("");
-  const [vesselVoyage, setVesselVoyage] = useState("POR ASIGNAR");
-  const [transshipmentTo, setTransshipmentTo] = useState("Línea Oceánica"); 
+  const [vesselVoyage, setVesselVoyage] = useState("");
+  const [transshipmentTo, setTransshipmentTo] = useState(""); 
 
   // --- 3. DATOS DEL DOCUMENTO Y FLETES ---
   const [blNumero, setBlNumero] = useState("");
-  const [packingListNo, setPackingListNo] = useState("N/A");
-  const [freightPayableBy, setFreightPayableBy] = useState("Exportador (Shipper)");
+  const [packingListNo, setPackingListNo] = useState("");
+  const [freightPayableBy, setFreightPayableBy] = useState("");
   const [termsOfSale, setTermsOfSale] = useState("");
   const [placeDateIssue, setPlaceDateIssue] = useState("");
   const [numberOfOriginals, setNumberOfOriginals] = useState(""); 
-  const [agentContact, setAgentContact] = useState("Agencia de Aduanas Siacomex Ltda\nCalle 2 No. 2-58 - Buenaventura");
+  const [agentContact, setAgentContact] = useState("");
   const [totalContainersReceived, setTotalContainersReceived] = useState(""); 
-  const [freightAmount, setFreightAmount] = useState("USD 3,300");
+  const [freightAmount, setFreightAmount] = useState("");
   const [freightType, setFreightType] = useState("Prepagado"); // Prepagado o Al Cobro
 
   // --- DATOS EMBARQUE ---
@@ -68,36 +68,37 @@ export default function DocumentoTransporte() {
 
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
-    const borradorGuardado = sessionStorage.getItem("borrador_documento_transporte_esp_v7");
+    // Aumentamos la versión para limpiar caché anterior
+    const borradorGuardado = sessionStorage.getItem("borrador_documento_transporte_esp_v8");
 
     if (borradorGuardado) {
       const datos = JSON.parse(borradorGuardado);
       
-      setLineaNavieraNombre(datos.lineaNavieraNombre || "LÍNEA OCEÁNICA");
-      setLineaNavieraNit(datos.lineaNavieraNit || "NIT 900.123.456-7");
+      setLineaNavieraNombre(datos.lineaNavieraNombre || "");
+      setLineaNavieraNit(datos.lineaNavieraNit || "");
       setLineaNavieraLogo(datos.lineaNavieraLogo || null);
 
       setSRazonSocial(datos.sRazonSocial || ""); setSNit(datos.sNit || ""); setSContacto(datos.sContacto || ""); setSCiudad(datos.sCiudad || ""); setSPais(datos.sPais || "");
       setCRazonSocial(datos.cRazonSocial || ""); setCNit(datos.cNit || ""); setCContacto(datos.cContacto || ""); setCCiudad(datos.cCiudad || ""); setCPais(datos.cPais || "");
-      setNRazonSocial(datos.nRazonSocial || "IGUAL AL CONSIGNATARIO"); setNNit(datos.nNit || ""); setNContacto(datos.nContacto || ""); setNCiudad(datos.nCiudad || ""); setNPais(datos.nPais || "");
+      setNRazonSocial(datos.nRazonSocial || ""); setNNit(datos.nNit || ""); setNContacto(datos.nContacto || ""); setNCiudad(datos.nCiudad || ""); setNPais(datos.nPais || "");
 
       setPlaceOfReceipt(datos.placeOfReceipt || "");
       setPortOfLoading(datos.portOfLoading || "");
       setPortOfDischarge(datos.portOfDischarge || "");
       setPlaceOfDelivery(datos.placeOfDelivery || "");
-      setVesselVoyage(datos.vesselVoyage || "POR ASIGNAR");
-      setTransshipmentTo(datos.transshipmentTo || "Línea Oceánica");
+      setVesselVoyage(datos.vesselVoyage || "");
+      setTransshipmentTo(datos.transshipmentTo || "");
 
       setBlNumero(datos.blNumero || "");
-      setPackingListNo(datos.packingListNo || "N/A");
-      setFreightPayableBy(datos.freightPayableBy || "Exportador (Shipper)");
+      setPackingListNo(datos.packingListNo || "");
+      setFreightPayableBy(datos.freightPayableBy || "");
       setTermsOfSale(datos.termsOfSale || "");
       setPlaceDateIssue(datos.placeDateIssue || "");
       setNumberOfOriginals(datos.numberOfOriginals || ""); 
-      setAgentContact(datos.agentContact || "Agencia de Aduanas Siacomex Ltda\nCalle 2 No. 2-58 - Buenaventura");
+      setAgentContact(datos.agentContact || "");
       setTotalContainersReceived(datos.totalContainersReceived || "");
       
-      setFreightAmount(datos.freightAmount || "USD 3,300");
+      setFreightAmount(datos.freightAmount || "");
       setFreightType(datos.freightType || "Prepagado");
       
       setMarksAndNumbers(datos.marksAndNumbers || "");
@@ -113,34 +114,20 @@ export default function DocumentoTransporte() {
       const fechaFormateada = hoy.toLocaleDateString('es-ES', opciones);
       
       setBlNumero(`BL-${Math.floor(10000000 + Math.random() * 90000000)}`);
-      setPlaceDateIssue(`Buenaventura, Colombia - ${fechaFormateada}`);
       setShippedOnBoardDate(fechaFormateada); 
 
+      // Heredar datos esenciales de la reserva, pero dejando lo demás en blanco
       const datosGuardados = localStorage.getItem('datosReserva');
       if (datosGuardados) {
         const parsed = JSON.parse(datosGuardados);
         
         setSRazonSocial(parsed.shipperNombre || "");
-        setSPais("Colombia");
-        
         setCRazonSocial(parsed.consignatarioNombre || "");
-        
-        // Rutas y transporte en blanco por defecto
-        setPortOfLoading("");
-        setPortOfDischarge("");
-        setPlaceOfReceipt("");
-        setPlaceOfDelivery("");
-        
-        setMarksAndNumbers(`Contenedor No:\n${parsed.contenedores || "POR ASIGNAR"}`);
-        setNoOfPkgs("1 Contenedor");
         setDescription(parsed.mercancia || "");
         
-        // Extraer solo el número del peso bruto (sin el "Kg")
-        setGrossWeight(parsed.pesoBruto ? String(parsed.pesoBruto).replace(/[^0-9.]/g, '') : "");
-        setMeasurement(""); // Vacío por defecto
-        
-        setNumberOfOriginals(""); 
-        setTotalContainersReceived(""); 
+        if (parsed.contenedores) {
+            setMarksAndNumbers(`Contenedor No:\n${parsed.contenedores}`);
+        }
       }
     }
   }, []);
@@ -157,7 +144,7 @@ export default function DocumentoTransporte() {
       agentContact, totalContainersReceived, freightAmount, freightType, marksAndNumbers,
       noOfPkgs, description, grossWeight, measurement, shippedOnBoardDate
     };
-    sessionStorage.setItem("borrador_documento_transporte_esp_v6", JSON.stringify(borradorActual));
+    sessionStorage.setItem("borrador_documento_transporte_esp_v8", JSON.stringify(borradorActual));
   });
 
   // Manejador de subida de logo cuadrado
@@ -569,7 +556,6 @@ export default function DocumentoTransporte() {
               <div className="col-span-2"><label className="block text-[9px] font-bold text-gray-500 text-center">NO. DE BULTOS</label><textarea className="w-full border p-2 text-[10px] rounded h-24 resize-none text-center" value={noOfPkgs} onChange={(e)=>setNoOfPkgs(e.target.value)} required /></div>
               <div className="col-span-4"><label className="block text-[9px] font-bold text-gray-500 text-center">DESCRIPCIÓN DE MERCANCÍA</label><textarea className="w-full border p-2 text-[10px] rounded h-24 resize-none font-bold text-gray-700" value={description} onChange={(e)=>setDescription(e.target.value)} required /></div>
               
-              {/* MODIFICADO: Solo se ingresan los números para Peso y Volumen */}
               <div className="col-span-2"><label className="block text-[9px] font-bold text-gray-500 text-center">PESO BRUTO (Kg)</label><textarea className="w-full border p-2 text-[10px] rounded h-24 resize-none text-center" placeholder="Ej. 886.6" value={grossWeight} onChange={(e)=>setGrossWeight(e.target.value)} required /></div>
               <div className="col-span-2"><label className="block text-[9px] font-bold text-gray-500 text-center">VOLUMEN (M3)</label><textarea className="w-full border p-2 text-[10px] rounded h-24 resize-none text-center" placeholder="Ej. 15.5" value={measurement} onChange={(e)=>setMeasurement(e.target.value)} required /></div>
             </div>

@@ -31,8 +31,9 @@ export default function CertificadoInvima() {
   const [municipio, setMunicipio] = useState("");
 
   // --- 3. IDENTIFICACIÓN DE LOS PRODUCTOS (TABLA) ---
+  // AHORA LIMPIOS POR DEFECTO
   const [items, setItems] = useState([
-    { producto: "", fabricante: "", pais: "", pesoVol: "", lote: "", temp: "", vencim: "", inspeccion: "APROBADO" }
+    { producto: "", fabricante: "", pais: "", pesoBruto: "", pesoNeto: "", cajas: "", lote: "", temp: "", vencim: "", inspeccion: "APROBADO" }
   ]);
 
   // --- 4. FIRMA Y OBSERVACIONES ---
@@ -43,7 +44,8 @@ export default function CertificadoInvima() {
 
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
-    const borradorGuardado = sessionStorage.getItem("borrador_certificado_invima_v3");
+    // Cambio de versión a v5 para borrar cachés anteriores
+    const borradorGuardado = sessionStorage.getItem("borrador_certificado_invima_v5");
     const hoy = new Date().toISOString().split('T')[0];
 
     if (borradorGuardado) {
@@ -82,12 +84,19 @@ export default function CertificadoInvima() {
         const parsed = JSON.parse(datosGuardados);
         setSolicitante(parsed.shipperNombre || "");
         setDestinatario(parsed.consignatarioNombre || "");
+        
+        // Todo en blanco para que el estudiante lo llene
         setItems([{ 
           producto: parsed.mercancia || "", 
           fabricante: parsed.shipperNombre || "", 
-          pais: "COLOMBIA", 
-          pesoVol: parsed.pesoBruto || "", 
-          lote: "", temp: "20-25°C", vencim: "", inspeccion: "APROBADO" 
+          pais: "", 
+          pesoBruto: "",
+          pesoNeto: "", 
+          cajas: "",    
+          lote: "", 
+          temp: "", 
+          vencim: "", 
+          inspeccion: "APROBADO" 
         }]);
       }
     }
@@ -99,11 +108,11 @@ export default function CertificadoInvima() {
       tipoImportacion, bodega, docTransporte, certificadoSanitario,
       identificacion, destinatario, direccion, municipio, items, inspector, observaciones
     };
-    sessionStorage.setItem("borrador_certificado_invima_v3", JSON.stringify(borradorActual));
+    sessionStorage.setItem("borrador_certificado_invima_v5", JSON.stringify(borradorActual));
   });
 
   const agregarItem = () => {
-    setItems([...items, { producto: "", fabricante: "", pais: "", pesoVol: "", lote: "", temp: "", vencim: "", inspeccion: "APROBADO" }]);
+    setItems([...items, { producto: "", fabricante: "", pais: "", pesoBruto: "", pesoNeto: "", cajas: "", lote: "", temp: "", vencim: "", inspeccion: "APROBADO" }]);
   };
 
   const actualizarItem = (index: number, campo: string, valor: string) => {
@@ -122,11 +131,8 @@ export default function CertificadoInvima() {
     const doc = new jsPDF("landscape");
 
     // --- ENCABEZADO INSTITUCIONAL ---
-    
-    // Intento de cargar logo INVIMA desde la carpeta /public
     try {
         const imgPath = "/invima_logo.png";
-        // Convertimos imagen a base64 para inyectar en jsPDF
         const response = await fetch(imgPath);
         if(response.ok){
             const blob = await response.blob();
@@ -137,7 +143,7 @@ export default function CertificadoInvima() {
                 generarContenidoPDF(doc);
             }
             reader.readAsDataURL(blob);
-            return; // Esperamos el onloadend
+            return; 
         }
     } catch (err) {
         console.warn("No se encontró invima_logo.png en public, usando texto alternativo.");
@@ -225,7 +231,9 @@ export default function CertificadoInvima() {
       item.producto,
       item.fabricante,
       item.pais,
-      item.pesoVol,
+      item.pesoBruto,
+      item.pesoNeto,
+      item.cajas,
       item.lote,
       item.temp,
       item.vencim,
@@ -234,14 +242,14 @@ export default function CertificadoInvima() {
 
     autoTable(doc, {
       startY: 120,
-      head: [["Producto", "Fabricante", "País", "Peso/vol", "Lote", "Temp °C", "Vencimiento", "Inspección"]],
+      head: [["Producto", "Fabricante", "País", "P. Bruto (kg)", "P. Neto (kg)", "N° Cajas", "Lote", "Temp °C", "Vencimiento", "Inspección"]],
       body: filas,
       theme: 'grid',
       headStyles: { fillColor: [255, 255, 255], textColor: 0, fontStyle: 'bold', halign: 'center', lineColor: 0, lineWidth: 0.5 },
-      styles: { fontSize: 8, cellPadding: 3, textColor: 0, lineColor: 0, lineWidth: 0.5, valign: 'middle', halign: 'center' },
+      styles: { fontSize: 7, cellPadding: 2, textColor: 0, lineColor: 0, lineWidth: 0.5, valign: 'middle', halign: 'center' },
     });
 
-    // --- 4. FIRMA Y OBSERVACIONES (PROFESIONAL) ---
+    // --- 4. FIRMA Y OBSERVACIONES ---
     const finalY = (doc as any).lastAutoTable.finalY + 15;
     
     doc.setFontSize(9);
@@ -251,14 +259,13 @@ export default function CertificadoInvima() {
     const lineasObs = doc.splitTextToSize(observaciones, 220);
     doc.text(lineasObs, 50, finalY);
 
-    // Calculamos el espacio que ocupan las observaciones para poner la firma debajo
     const alturaObservaciones = lineasObs.length * 5;
     const firmaY = finalY + alturaObservaciones + 15;
     
     // Sello circular simulado
     doc.setDrawColor(0, 0, 150); // Azul tinta de sello
     doc.setLineWidth(1);
-    doc.circle(220, firmaY + 5, 20); // Círculo exterior (más grande)
+    doc.circle(220, firmaY + 5, 20); 
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(0, 0, 150);
@@ -279,11 +286,11 @@ export default function CertificadoInvima() {
     doc.setFont("helvetica", "normal");
     doc.text("INSPECTOR INVIMA", 110, firmaY + 25, { align: "center" });
 
-    // --- FOOTER INSTITUCIONAL (CLONADO) ---
-    const footerY = 190; // Posición fija abajo
-    doc.setDrawColor(33, 107, 165); // Azul corporativo
+    // --- FOOTER INSTITUCIONAL ---
+    const footerY = 190; 
+    doc.setDrawColor(33, 107, 165); 
     doc.setLineWidth(1.5);
-    doc.line(10, footerY, 10, footerY + 15); // Línea vertical izquierda
+    doc.line(10, footerY, 10, footerY + 15); 
 
     doc.setFontSize(7);
     doc.setTextColor(100, 100, 100);
@@ -374,12 +381,14 @@ export default function CertificadoInvima() {
             </div>
             
             <div className="flex items-center gap-2 mb-2">
-              <div className="hidden md:grid grid-cols-11 gap-2 bg-gray-100 border border-gray-300 text-gray-800 p-2 rounded-md text-[10px] font-bold text-center items-center w-full shadow-sm">
+              <div className="hidden md:grid grid-cols-12 gap-2 bg-gray-100 border border-gray-300 text-gray-800 p-2 rounded-md text-[9px] font-bold text-center items-center w-full shadow-sm">
                 <div className="col-span-2 uppercase">Producto</div>
                 <div className="col-span-2 uppercase">Fabricante</div>
                 <div className="col-span-1 uppercase">País</div>
-                <div className="col-span-1 uppercase">Peso/vol</div>
-                <div className="col-span-2 uppercase">Lote</div>
+                <div className="col-span-1 uppercase">P. Bruto(kg)</div>
+                <div className="col-span-1 uppercase">P. Neto(kg)</div>
+                <div className="col-span-1 uppercase">N° Cajas</div>
+                <div className="col-span-1 uppercase">Lote</div>
                 <div className="col-span-1 uppercase">Temp °C</div>
                 <div className="col-span-1 uppercase">Vencimiento</div>
                 <div className="col-span-1 uppercase">Inspección</div>
@@ -389,15 +398,19 @@ export default function CertificadoInvima() {
 
             {items.map((item, index) => (
               <div key={index} className="flex flex-col md:flex-row items-start md:items-center gap-2 mb-2">
-                <div className="grid grid-cols-1 md:grid-cols-11 gap-2 border border-gray-300 bg-white p-4 md:p-2 rounded-md shadow-sm w-full">
-                  <div className="md:col-span-2"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Producto:</label><textarea className="w-full border rounded p-1 text-xs outline-none resize-none h-10 font-bold" value={item.producto} onChange={(e) => actualizarItem(index, 'producto', e.target.value)} required /></div>
-                  <div className="md:col-span-2"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Fabricante:</label><textarea className="w-full border rounded p-1 text-xs outline-none resize-none h-10 uppercase" value={item.fabricante} onChange={(e) => actualizarItem(index, 'fabricante', e.target.value)} required /></div>
-                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">País:</label><input type="text" className="w-full border rounded p-1 text-xs text-center outline-none uppercase" value={item.pais} onChange={(e) => actualizarItem(index, 'pais', e.target.value)} required /></div>
-                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Peso/vol:</label><input type="text" className="w-full border rounded p-1 text-xs text-center outline-none" value={item.pesoVol} onChange={(e) => actualizarItem(index, 'pesoVol', e.target.value)} required /></div>
-                  <div className="md:col-span-2"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Lote:</label><textarea className="w-full border rounded p-1 text-xs text-center outline-none resize-none h-10 font-mono" value={item.lote} onChange={(e) => actualizarItem(index, 'lote', e.target.value)} required /></div>
-                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Temp °C:</label><input type="text" className="w-full border rounded p-1 text-xs text-center outline-none" value={item.temp} onChange={(e) => actualizarItem(index, 'temp', e.target.value)} required /></div>
-                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Vencimiento:</label><input type="text" className="w-full border rounded p-1 text-xs text-center outline-none" value={item.vencim} onChange={(e) => actualizarItem(index, 'vencim', e.target.value)} required /></div>
-                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Inspección:</label><input type="text" className="w-full border rounded p-1 text-xs text-center outline-none font-bold text-green-700 uppercase" value={item.inspeccion} onChange={(e) => actualizarItem(index, 'inspeccion', e.target.value)} required /></div>
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-2 border border-gray-300 bg-white p-4 md:p-2 rounded-md shadow-sm w-full">
+                  <div className="md:col-span-2"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Producto:</label><textarea className="w-full border rounded p-1 text-[10px] outline-none resize-none h-10 font-bold" value={item.producto} onChange={(e) => actualizarItem(index, 'producto', e.target.value)} required /></div>
+                  <div className="md:col-span-2"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Fabricante:</label><textarea className="w-full border rounded p-1 text-[10px] outline-none resize-none h-10 uppercase" value={item.fabricante} onChange={(e) => actualizarItem(index, 'fabricante', e.target.value)} required /></div>
+                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">País:</label><input type="text" className="w-full border rounded p-1 text-[10px] text-center outline-none uppercase" value={item.pais} onChange={(e) => actualizarItem(index, 'pais', e.target.value)} required /></div>
+                  
+                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">P. Bruto:</label><input type="number" className="w-full border rounded p-1 text-[10px] text-center outline-none" value={item.pesoBruto} onChange={(e) => actualizarItem(index, 'pesoBruto', e.target.value)} required /></div>
+                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">P. Neto:</label><input type="number" className="w-full border rounded p-1 text-[10px] text-center outline-none" value={item.pesoNeto} onChange={(e) => actualizarItem(index, 'pesoNeto', e.target.value)} required /></div>
+                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Cajas:</label><input type="number" className="w-full border rounded p-1 text-[10px] text-center outline-none" value={item.cajas} onChange={(e) => actualizarItem(index, 'cajas', e.target.value)} required /></div>
+                  
+                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Lote:</label><textarea className="w-full border rounded p-1 text-[10px] text-center outline-none resize-none h-10 font-mono" value={item.lote} onChange={(e) => actualizarItem(index, 'lote', e.target.value)} required /></div>
+                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Temp °C:</label><input type="text" className="w-full border rounded p-1 text-[10px] text-center outline-none" value={item.temp} onChange={(e) => actualizarItem(index, 'temp', e.target.value)} required /></div>
+                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Vencim.:</label><input type="text" className="w-full border rounded p-1 text-[10px] text-center outline-none" value={item.vencim} onChange={(e) => actualizarItem(index, 'vencim', e.target.value)} required /></div>
+                  <div className="md:col-span-1"><label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Inspección:</label><input type="text" className="w-full border rounded p-1 text-[9px] text-center outline-none font-bold text-green-700 uppercase" value={item.inspeccion} onChange={(e) => actualizarItem(index, 'inspeccion', e.target.value)} required /></div>
                 </div>
                 
                 {/* Botón flotante para eliminar */}

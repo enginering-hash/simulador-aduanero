@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Link from "next/link";
@@ -8,6 +8,10 @@ import { useRouter } from "next/navigation";
 
 export default function FormatoReserva() {
   const router = useRouter(); 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- LOGO ---
+  const [logoBase64, setLogoBase64] = useState<string>("");
 
   const [bookingRef, setBookingRef] = useState("");
 
@@ -20,23 +24,22 @@ export default function FormatoReserva() {
   const [destino, setDestino] = useState("");
   const [lugarEmisionBl, setLugarEmisionBl] = useState("Origen"); 
   const [tipoServicio, setTipoServicio] = useState("FCL");
-  // (Eliminados los estados de Cut-Off)
 
   // --- 2. ACTORES ---
   const [shipperNombre, setShipperNombre] = useState("");
   const [shipperDireccion, setShipperDireccion] = useState("");
-  const [shipperContacto, setShipperContacto] = useState("");
+  const [shipperEmail, setShipperEmail] = useState(""); // Cambiado de Contacto a Email
   const [shipperTelefono, setShipperTelefono] = useState("");
   const [shipperFax, setShipperFax] = useState("");
   
   const [siaNombre, setSiaNombre] = useState("");
   const [siaDireccion, setSiaDireccion] = useState("");
-  const [siaContacto, setSiaContacto] = useState("");
+  const [siaEmail, setSiaEmail] = useState(""); // Cambiado de Contacto a Email
   const [siaTelefono, setSiaTelefono] = useState("");
   
   const [consignatarioNombre, setConsignatarioNombre] = useState("");
   const [consignatarioDireccion, setConsignatarioDireccion] = useState("");
-  const [consignatarioContacto, setConsignatarioContacto] = useState("");
+  const [consignatarioEmail, setConsignatarioEmail] = useState(""); // Cambiado de Contacto a Email
   const [consignatarioTelefono, setConsignatarioTelefono] = useState("");
 
   // --- 3. CONDICIONES Y FLETES ---
@@ -69,13 +72,15 @@ export default function FormatoReserva() {
 
   // CARGAR DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
-    const borradorGuardado = sessionStorage.getItem("borrador_formato_reserva_v2");
+    const borradorGuardado = sessionStorage.getItem("borrador_formato_reserva_v3");
     let bookingActual = "";
 
     if (borradorGuardado) {
       const datos = JSON.parse(borradorGuardado);
       bookingActual = datos.bookingRef || "";
       
+      setLogoBase64(datos.logoBase64 || "");
+
       setFechaElaboracion(datos.fechaElaboracion || ""); 
       setBuqueViaje(datos.buqueViaje || "");
       setOrigen(datos.origen || "");
@@ -87,18 +92,18 @@ export default function FormatoReserva() {
       
       setShipperNombre(datos.shipperNombre || "");
       setShipperDireccion(datos.shipperDireccion || "");
-      setShipperContacto(datos.shipperContacto || "");
+      setShipperEmail(datos.shipperEmail || "");
       setShipperTelefono(datos.shipperTelefono || "");
       setShipperFax(datos.shipperFax || "");
       
       setSiaNombre(datos.siaNombre || "");
       setSiaDireccion(datos.siaDireccion || "");
-      setSiaContacto(datos.siaContacto || "");
+      setSiaEmail(datos.siaEmail || "");
       setSiaTelefono(datos.siaTelefono || "");
       
       setConsignatarioNombre(datos.consignatarioNombre || "");
       setConsignatarioDireccion(datos.consignatarioDireccion || "");
-      setConsignatarioContacto(datos.consignatarioContacto || "");
+      setConsignatarioEmail(datos.consignatarioEmail || "");
       setConsignatarioTelefono(datos.consignatarioTelefono || "");
       
       setTarifa(datos.tarifa || "");
@@ -139,25 +144,35 @@ export default function FormatoReserva() {
   useEffect(() => {
     if (bookingRef) {
       const borradorActual = {
-        bookingRef, fechaElaboracion, buqueViaje, origen, puertoCargue, puertoDescargue, destino,
+        bookingRef, logoBase64, fechaElaboracion, buqueViaje, origen, puertoCargue, puertoDescargue, destino,
         lugarEmisionBl, tipoServicio,
-        shipperNombre, shipperDireccion, shipperContacto, shipperTelefono, shipperFax,
-        siaNombre, siaDireccion, siaContacto, siaTelefono,
-        consignatarioNombre, consignatarioDireccion, consignatarioContacto, consignatarioTelefono,
+        shipperNombre, shipperDireccion, shipperEmail, shipperTelefono, shipperFax,
+        siaNombre, siaDireccion, siaEmail, siaTelefono,
+        consignatarioNombre, consignatarioDireccion, consignatarioEmail, consignatarioTelefono,
         tarifa, serviceContract, formaPagoFletes,
         cantidadContenedores, tamanoContenedor, tipoContenedor, pesoBruto, mercancia,
         lugarSuministro, empresaTransportadora,
         esPeligrosa, unNa, imo, pg, flashpoint,
         esRefrigerada, temperatura, vent, cmh, observaciones
       };
-      sessionStorage.setItem("borrador_formato_reserva_v2", JSON.stringify(borradorActual));
+      sessionStorage.setItem("borrador_formato_reserva_v3", JSON.stringify(borradorActual));
     }
   });
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoBase64(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Guardamos los datos para que el siguiente paso los tome
     const resumenReserva = {
       bookingRef, shipperNombre, consignatarioNombre, 
       puertoCargue, destino, mercancia, 
@@ -169,7 +184,10 @@ export default function FormatoReserva() {
     
     const doc = new jsPDF();
 
-    // Encabezado
+    if (logoBase64) {
+      doc.addImage(logoBase64, 15, 10, 20, 20); // Logo cuadrado
+    }
+
     doc.setFontSize(16);
     doc.setTextColor(124, 58, 237); // Púrpura
     doc.text("FORMATO DE RESERVA (BOOKING REQUEST)", 105, 15, { align: "center" });
@@ -179,13 +197,12 @@ export default function FormatoReserva() {
 
     // 1. Ruta y Transporte
     autoTable(doc, {
-      startY: 25,
+      startY: 30, // Ajustado para dar espacio al logo
       head: [[{ content: "RUTA Y TRANSPORTE", colSpan: 4 }]],
       body: [
         ["Buque Viaje:", buqueViaje, "Origen:", origen],
         ["Puerto de Cargue:", puertoCargue, "Puerto de Descargue:", puertoDescargue],
         ["Destino:", destino, "Lugar Emisión B/Ls:", lugarEmisionBl],
-        // Quitamos el Cut-off, dejamos las celdas en blanco para cuadrar las columnas
         ["Tipo de Servicio:", tipoServicio, "", ""]
       ],
       theme: 'plain',
@@ -193,14 +210,14 @@ export default function FormatoReserva() {
       styles: { fontSize: 8, cellPadding: 2, lineWidth: 0.1, lineColor: [200, 200, 200] },
     });
 
-    // 2. Actores
+    // 2. Actores (Modificado Contacto a Email)
     autoTable(doc, {
       startY: (doc as any).lastAutoTable.finalY + 5,
       head: [["EXPORTADOR", "AGENTE DE ADUANA (SIA)", "CONSIGNATARIO"]],
       body: [
         [shipperNombre, siaNombre, consignatarioNombre],
         [`Dir: ${shipperDireccion}`, `Dir: ${siaDireccion}`, `Dir: ${consignatarioDireccion}`],
-        [`Contacto: ${shipperContacto}`, `Contacto: ${siaContacto}`, `Contacto: ${consignatarioContacto}`],
+        [`Email: ${shipperEmail}`, `Email: ${siaEmail}`, `Email: ${consignatarioEmail}`],
         [`Tel: ${shipperTelefono} | Fax: ${shipperFax}`, `Tel: ${siaTelefono}`, `Tel: ${consignatarioTelefono}`]
       ],
       theme: 'grid',
@@ -283,6 +300,26 @@ export default function FormatoReserva() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           
+          <div className="bg-white p-4 rounded-lg border-2 border-dashed border-purple-300 flex flex-col md:flex-row items-center gap-6 justify-between mb-6">
+            <div>
+              <label className="block text-sm font-bold text-purple-800 mb-2">Añadir Logo de Naviera / Agente (Opcional)</label>
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                accept="image/*" 
+                onChange={handleLogoUpload} 
+                className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-bold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer" 
+              />
+            </div>
+            {logoBase64 && (
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-gray-400 mb-1">Vista Previa</span>
+                <img src={logoBase64} alt="Logo Preview" className="h-16 w-16 object-contain border border-gray-200 rounded p-1 shadow-sm" />
+                <button type="button" onClick={() => setLogoBase64("")} className="text-xs text-red-500 hover:underline mt-1">Quitar logo</button>
+              </div>
+            )}
+          </div>
+
           {/* SECCIÓN 1: RUTA */}
           <section className="bg-gray-50 p-5 rounded-lg border border-gray-200">
             <h3 className="text-sm font-bold text-purple-700 mb-4 border-b pb-2">1. INFORMACIÓN DEL VIAJE Y RUTA</h3>
@@ -312,7 +349,6 @@ export default function FormatoReserva() {
                 </select>
               </div>
               
-              {/* SE ELIMINARON LOS CAMPOS DE CUT-OFF DE AQUÍ */}
             </div>
           </section>
 
@@ -323,7 +359,7 @@ export default function FormatoReserva() {
               <div className="space-y-2">
                 <input type="text" placeholder="Nombre/Razón Social" className="w-full border p-2 text-xs rounded" value={shipperNombre} onChange={(e)=>setShipperNombre(e.target.value)} required/>
                 <input type="text" placeholder="Dirección" className="w-full border p-2 text-xs rounded" value={shipperDireccion} onChange={(e)=>setShipperDireccion(e.target.value)} required/>
-                <input type="text" placeholder="Contacto" className="w-full border p-2 text-xs rounded" value={shipperContacto} onChange={(e)=>setShipperContacto(e.target.value)} required/>
+                <input type="email" placeholder="Email" className="w-full border p-2 text-xs rounded" value={shipperEmail} onChange={(e)=>setShipperEmail(e.target.value)} required/>
                 <input type="text" placeholder="Teléfono" className="w-full border p-2 text-xs rounded" value={shipperTelefono} onChange={(e)=>setShipperTelefono(e.target.value)} required/>
                 <input type="text" placeholder="Fax" className="w-full border p-2 text-xs rounded" value={shipperFax} onChange={(e)=>setShipperFax(e.target.value)}/>
               </div>
@@ -334,7 +370,7 @@ export default function FormatoReserva() {
               <div className="space-y-2">
                 <input type="text" placeholder="Nombre del SIA" className="w-full border p-2 text-xs rounded" value={siaNombre} onChange={(e)=>setSiaNombre(e.target.value)} required/>
                 <input type="text" placeholder="Dirección" className="w-full border p-2 text-xs rounded" value={siaDireccion} onChange={(e)=>setSiaDireccion(e.target.value)} required/>
-                <input type="text" placeholder="Contacto" className="w-full border p-2 text-xs rounded outline-none focus:ring-1 focus:ring-purple-500" value={siaContacto} onChange={(e)=>setSiaContacto(e.target.value)} required/>
+                <input type="email" placeholder="Email" className="w-full border p-2 text-xs rounded outline-none focus:ring-1 focus:ring-purple-500" value={siaEmail} onChange={(e)=>setSiaEmail(e.target.value)} required/>
                 <input type="text" placeholder="Teléfono" className="w-full border p-2 text-xs rounded" value={siaTelefono} onChange={(e)=>setSiaTelefono(e.target.value)} required/>
               </div>
             </div>
@@ -344,7 +380,7 @@ export default function FormatoReserva() {
               <div className="space-y-2">
                 <input type="text" placeholder="Nombre/Razón Social" className="w-full border p-2 text-xs rounded" value={consignatarioNombre} onChange={(e)=>setConsignatarioNombre(e.target.value)} required/>
                 <input type="text" placeholder="Dirección" className="w-full border p-2 text-xs rounded" value={consignatarioDireccion} onChange={(e)=>setConsignatarioDireccion(e.target.value)} required/>
-                <input type="text" placeholder="Contacto" className="w-full border p-2 text-xs rounded" value={consignatarioContacto} onChange={(e)=>setConsignatarioContacto(e.target.value)} required/>
+                <input type="email" placeholder="Email" className="w-full border p-2 text-xs rounded" value={consignatarioEmail} onChange={(e)=>setConsignatarioEmail(e.target.value)} required/>
                 <input type="text" placeholder="Teléfono" className="w-full border p-2 text-xs rounded" value={consignatarioTelefono} onChange={(e)=>setConsignatarioTelefono(e.target.value)} required/>
               </div>
             </div>

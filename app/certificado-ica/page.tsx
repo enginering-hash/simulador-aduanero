@@ -38,14 +38,14 @@ export default function CertificadoICA() {
   const [duracionTemp, setDuracionTemp] = useState("");
 
   // --- DATOS DE FIRMA Y EXPEDICIÓN ---
-  const [lugarExpedicion, setLugarExpedicion] = useState("Buenaventura");
+  const [lugarExpedicion, setLugarExpedicion] = useState(""); // Limpiado (Antes "Buenaventura")
   const [fechaExpedicion, setFechaExpedicion] = useState("");
   const [funcionario, setFuncionario] = useState("");
 
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
     const hoy = new Date().toISOString().split('T')[0];
-    const borradorGuardado = sessionStorage.getItem("borrador_certificado_ica_v3");
+    const borradorGuardado = sessionStorage.getItem("borrador_certificado_ica_v4");
 
     if (borradorGuardado) {
       const datos = JSON.parse(borradorGuardado);
@@ -70,14 +70,13 @@ export default function CertificadoICA() {
       setConcentracion(datos.concentracion || "");
       setDuracionTemp(datos.duracionTemp || "");
       
-      setLugarExpedicion(datos.lugarExpedicion || "Buenaventura");
+      setLugarExpedicion(datos.lugarExpedicion || "");
       setFechaExpedicion(datos.fechaExpedicion || hoy);
       setFuncionario(datos.funcionario || "");
     } else {
       // Si es la primera vez, generamos número de certificado y heredamos datos base
       setNumeroCertificado(`CV 09 - ${Math.floor(100000 + Math.random() * 900000)}`);
       setFechaExpedicion(hoy);
-      setLugarExpedicion("Buenaventura");
       
       // Sugerimos una declaración adicional estándar
       setDeclaracionAdicional("Los productos vegetales aquí descritos cumplen con los requisitos fitosanitarios de importación.");
@@ -105,7 +104,7 @@ export default function CertificadoICA() {
       declaracionAdicional, fechaTratamiento, tratamiento, quimico,
       concentracion, duracionTemp, lugarExpedicion, fechaExpedicion, funcionario
     };
-    sessionStorage.setItem("borrador_certificado_ica_v3", JSON.stringify(borradorActual));
+    sessionStorage.setItem("borrador_certificado_ica_v4", JSON.stringify(borradorActual));
   });
 
   const generarPDF = (e: React.FormEvent) => {
@@ -196,7 +195,6 @@ export default function CertificadoICA() {
     // --- BLOQUE 5: FIRMA ---
     const finalY = (doc as any).lastAutoTable.finalY + 12;
     doc.setFont("helvetica", "bold");
-    // AQUÍ SE APLICA EL CAMBIO QUE SOLICITASTE
     doc.text(`Lugar y Fecha de Expedición: ${lugarExpedicion}, ${fechaExpedicion}`, 14, finalY);
     doc.text(`Nombre del funcionario autorizado: ${funcionario}`, 14, finalY + 10);
     

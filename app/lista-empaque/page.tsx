@@ -32,7 +32,6 @@ export default function ListaEmpaque() {
   // --- CONDICIONES Y LOGÍSTICA ---
   const [incoterm, setIncoterm] = useState("");
   const [formaPago, setFormaPago] = useState("");
-  const [plazoPago, setPlazoPago] = useState("");
   const [puertoEmbarque, setPuertoEmbarque] = useState("");
   const [puertoDestino, setPuertoDestino] = useState("");
 
@@ -45,9 +44,9 @@ export default function ListaEmpaque() {
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
     const hoy = new Date().toISOString().split('T')[0];
-    const borradorGuardado = sessionStorage.getItem("borrador_lista_empaque_v7");
+    const borradorGuardado = sessionStorage.getItem("borrador_lista_empaque_v8"); // Cambio de version para limpiar
     
-    const datosFactura = sessionStorage.getItem("borrador_factura_comercial_v2");
+    const datosFactura = sessionStorage.getItem("borrador_factura_comercial_v3");
     let fData = datosFactura ? JSON.parse(datosFactura) : null;
 
     let plActual = "";
@@ -73,7 +72,6 @@ export default function ListaEmpaque() {
 
       setIncoterm(datos.incoterm || "");
       setFormaPago(datos.formaPago || "");
-      setPlazoPago(datos.plazoPago || "");
       setPuertoEmbarque(datos.puertoEmbarque || "");
       setPuertoDestino(datos.puertoDestino || "");
 
@@ -114,10 +112,10 @@ export default function ListaEmpaque() {
         numeroLista, fechaEmision, 
         expRazonSocial, expEmail, expTelefono, expNit, expDireccion, expCiudadPais,
         impRazonSocial, impEmail, impTelefono, impNit, impDireccion, impCiudadPais,
-        incoterm, formaPago, plazoPago, puertoEmbarque, puertoDestino,
+        incoterm, formaPago, puertoEmbarque, puertoDestino,
         productos, observaciones
       };
-      sessionStorage.setItem("borrador_lista_empaque_v7", JSON.stringify(borradorActual));
+      sessionStorage.setItem("borrador_lista_empaque_v8", JSON.stringify(borradorActual));
     }
   });
 
@@ -149,12 +147,6 @@ export default function ListaEmpaque() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault(); 
     const doc = new jsPDF();
-
-    // Cálculos Automáticos de la Tabla
-    const totalPesoBruto = productos.reduce((sum, p) => sum + Number(p.pesoBruto || 0), 0);
-    const totalPesoNeto = productos.reduce((sum, p) => sum + Number(p.pesoNeto || 0), 0);
-    const totalCajas = productos.reduce((sum, p) => sum + Number(p.cajas || 0), 0);
-    const totalM3 = productos.reduce((sum, p) => sum + Number(p.totalM3 || 0), 0);
 
     // --- ENCABEZADO ---
     doc.setFontSize(20);
@@ -208,21 +200,13 @@ export default function ListaEmpaque() {
     doc.setFont("helvetica", "normal");
     doc.text(`Incoterm: ${incoterm}`, 20, infoY + 6);
     doc.text(`Forma de Pago: ${formaPago}`, 20, infoY + 12);
-    doc.text(`Plazo de Pago: ${plazoPago}`, 20, infoY + 18);
-    doc.text(`Puerto Origen: ${puertoEmbarque}`, 20, infoY + 24);
-    doc.text(`Puerto Destino: ${puertoDestino}`, 20, infoY + 30);
+    // Plazo de pago fue eliminado de aquí
+    doc.text(`Puerto Origen: ${puertoEmbarque}`, 20, infoY + 18);
+    doc.text(`Puerto Destino: ${puertoDestino}`, 20, infoY + 24);
     
-    // Mostramos los totales calculados debajo del importador
-    doc.setFont("helvetica", "bold");
-    doc.text("Resumen de Carga (Calculado)", 105, infoY);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Total Cajas: ${totalCajas}`, 105, infoY + 6);
-    doc.text(`Total Peso Bruto: ${totalPesoBruto.toFixed(2)} KG`, 105, infoY + 12);
-    doc.text(`Total Peso Neto: ${totalPesoNeto.toFixed(2)} KG`, 105, infoY + 18);
-    doc.text(`Total Volumen: ${totalM3.toFixed(3)} m³`, 105, infoY + 24);
-
+    // Resumen de Carga eliminado, la tabla sube para ocupar ese espacio
     // --- TABLA DE PRODUCTOS ---
-    const startTablaY = infoY + 38;
+    const startTablaY = infoY + 32; // Se subió la tabla
     const columnas = ["ITEM", "REF", "DESCRIPCIÓN / NCM", "P. BRUTO", "P. NETO", "CAJAS", "M3 / CAJA", "TOTAL M3"];
     
     const filas = productos.map((prod, index) => [
@@ -319,12 +303,12 @@ export default function ListaEmpaque() {
 
           <div className="bg-white p-5 rounded-lg border-2 border-dashed border-slate-300 shadow-inner">
             <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Condiciones de Embarque</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Incoterm:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} required /></div>
-              <div><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Forma de Pago:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={formaPago} onChange={(e) => setFormaPago(e.target.value)} required /></div>
-              <div><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Plazo de Pago:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={plazoPago} onChange={(e) => setPlazoPago(e.target.value)} required /></div>
+            {/* Se reestructuraron las columnas para ocupar el espacio del campo eliminado */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Incoterm:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} required /></div>
+              <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Forma de Pago:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={formaPago} onChange={(e) => setFormaPago(e.target.value)} required /></div>
               <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Puerto Origen:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={puertoEmbarque} onChange={(e) => setPuertoEmbarque(e.target.value)} required /></div>
-              <div className="md:col-span-2"><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Puerto Destino:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={puertoDestino} onChange={(e) => setPuertoDestino(e.target.value)} required /></div>
+              <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Puerto Destino:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={puertoDestino} onChange={(e) => setPuertoDestino(e.target.value)} required /></div>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import Link from "next/link";
@@ -8,10 +8,13 @@ import { useRouter } from "next/navigation";
 
 export default function AprobacionReserva() {
   const router = useRouter(); 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // --- LOGO NAVIERA ---
+  const [logoBase64, setLogoBase64] = useState<string>("");
 
   // --- ESTADOS EDITABLES ---
   const [naviera, setNaviera] = useState("");
-  // NUEVO: Estados para los datos de contacto de la naviera
   const [navieraOffice, setNavieraOffice] = useState("");
   const [navieraTel, setNavieraTel] = useState("");
   const [navieraEmail, setNavieraEmail] = useState("");
@@ -19,7 +22,7 @@ export default function AprobacionReserva() {
   const [bookingRef, setBookingRef] = useState("");
   const [buque, setBuque] = useState("");
   const [eta, setEta] = useState("");
-  const [fechaActual, setFechaActual] = useState(""); // Ahora será "Fecha de Zarpe"
+  const [fechaActual, setFechaActual] = useState(""); 
   const [cutOff, setCutOff] = useState("");
   
   const [shipperNombre, setShipperNombre] = useState("");
@@ -29,39 +32,54 @@ export default function AprobacionReserva() {
   const [mercancia, setMercancia] = useState("");
   const [contenedores, setContenedores] = useState("");
   const [tipoServicio, setTipoServicio] = useState("FCL");
+  
+  // NUEVO ESTADO: Para no tener textos fijos en la tabla
+  const [embarqueVia, setEmbarqueVia] = useState("ALMACEN A SOLICITUD DEL CLIENTE");
+  const [fleteMaritimo, setFleteMaritimo] = useState("AS PER AGREEMENT");
 
   // CARGAR DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
-    // ¡SOLUCIÓN!: Borramos cualquier borrador viejo al entrar para que siempre esté "limpio"
-    // a menos que vengas de un estado intermedio en la misma sesión.
-    // Para asegurar que siempre pida los datos de nuevo, comentamos la lectura del borrador.
-    // sessionStorage.removeItem("borrador_aprobacion_reserva_edit");
+    // Si quieres que no limpie la página al recargar, leemos el borrador:
+    const borradorGuardado = sessionStorage.getItem("borrador_aprobacion_reserva_v2");
+    
+    if (borradorGuardado) {
+      const datos = JSON.parse(borradorGuardado);
+      setLogoBase64(datos.logoBase64 || "");
+      setNaviera(datos.naviera || "");
+      setNavieraOffice(datos.navieraOffice || "");
+      setNavieraTel(datos.navieraTel || "");
+      setNavieraEmail(datos.navieraEmail || "");
+      setBookingRef(datos.bookingRef || "");
+      setBuque(datos.buque || "");
+      setEta(datos.eta || "");
+      setFechaActual(datos.fechaActual || "");
+      setCutOff(datos.cutOff || "");
+      setShipperNombre(datos.shipperNombre || "");
+      setConsignatarioNombre(datos.consignatarioNombre || "");
+      setPuertoCargue(datos.puertoCargue || "");
+      setDestino(datos.destino || "");
+      setMercancia(datos.mercancia || "");
+      setContenedores(datos.contenedores || "");
+      setTipoServicio(datos.tipoServicio || "FCL");
+      setEmbarqueVia(datos.embarqueVia || "ALMACEN A SOLICITUD DEL CLIENTE");
+      setFleteMaritimo(datos.fleteMaritimo || "AS PER AGREEMENT");
+    } else {
+      // Primera vez entrando, heredar datos de "Formato de Reserva"
+      const datosGuardados = localStorage.getItem('datosReserva');
+      const datosAnteriores = datosGuardados ? JSON.parse(datosGuardados) : {};
 
-    const datosGuardados = localStorage.getItem('datosReserva');
-    const datosAnteriores = datosGuardados ? JSON.parse(datosGuardados) : {};
+      setBookingRef(datosAnteriores.bookingRef || "");
+      setShipperNombre(datosAnteriores.shipperNombre || "");
+      setConsignatarioNombre(datosAnteriores.consignatarioNombre || "");
+      setPuertoCargue(datosAnteriores.puertoCargue || "");
+      setDestino(datosAnteriores.destino || "");
+      setMercancia(datosAnteriores.mercancia || "");
+      setContenedores(datosAnteriores.contenedores || "");
+      setTipoServicio(datosAnteriores.tipoServicio || "FCL");
 
-    setBookingRef(datosAnteriores.bookingRef || "");
-    setShipperNombre(datosAnteriores.shipperNombre || "");
-    setConsignatarioNombre(datosAnteriores.consignatarioNombre || "");
-    setPuertoCargue(datosAnteriores.puertoCargue || "");
-    setDestino(datosAnteriores.destino || "");
-    setMercancia(datosAnteriores.mercancia || "");
-    setContenedores(datosAnteriores.contenedores || "");
-    setTipoServicio(datosAnteriores.tipoServicio || "FCL");
-
-    // Limpiamos los campos que antes se generaban aleatoriamente
-    setBuque("");
-    setEta("");
-    setFechaActual("");
-    setCutOff("");
-    setNaviera("");
-    setNavieraOffice("");
-    setNavieraTel("");
-    setNavieraEmail("");
-
-    // Si el paso 4 traía Cut-off (aunque ya lo quitamos, por si acaso)
-    if (datosAnteriores.cutOff && datosAnteriores.cutOff.trim() !== "") {
-      setCutOff(datosAnteriores.cutOff);
+      if (datosAnteriores.cutOff && datosAnteriores.cutOff.trim() !== "") {
+        setCutOff(datosAnteriores.cutOff);
+      }
     }
   }, []);
 
@@ -69,10 +87,11 @@ export default function AprobacionReserva() {
   useEffect(() => {
     if (bookingRef) {
       const borradorActual = { 
-        naviera, navieraOffice, navieraTel, navieraEmail, bookingRef, buque, eta, fechaActual, cutOff,
-        shipperNombre, consignatarioNombre, puertoCargue, destino, mercancia, contenedores, tipoServicio
+        logoBase64, naviera, navieraOffice, navieraTel, navieraEmail, bookingRef, buque, eta, fechaActual, cutOff,
+        shipperNombre, consignatarioNombre, puertoCargue, destino, mercancia, contenedores, tipoServicio,
+        embarqueVia, fleteMaritimo
       };
-      sessionStorage.setItem("borrador_aprobacion_reserva_edit", JSON.stringify(borradorActual));
+      sessionStorage.setItem("borrador_aprobacion_reserva_v2", JSON.stringify(borradorActual));
       
       const globalActual = localStorage.getItem('datosReserva');
       if(globalActual){
@@ -83,17 +102,32 @@ export default function AprobacionReserva() {
     }
   });
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoBase64(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const generarPDF = (e: React.FormEvent) => {
     e.preventDefault();
     const doc = new jsPDF();
 
     // --- ENCABEZADO DE LA NAVIERA ---
+    if (logoBase64) {
+      doc.addImage(logoBase64, 20, 15, 20, 20); // Logo cuadrado a la izquierda
+    }
+
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.setTextColor(29, 78, 216); // Azul Naviera
     doc.text((naviera || "NOMBRE DE LA NAVIERA").toUpperCase(), 105, 25, { align: "center" });
     
-    // --- NUEVO: DATOS DE CONTACTO DINÁMICOS ---
+    // --- DATOS DE CONTACTO DINÁMICOS ---
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 100, 100);
@@ -114,7 +148,6 @@ export default function AprobacionReserva() {
 
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    // CAMBIO: Ahora dice "Fecha de Zarpe"
     doc.text(`Fecha de Zarpe: ${fechaActual}`, 20, 70);
     doc.setFont("helvetica", "italic");
     doc.text(`REF : EMBARQUE A BORDO DE / ${buque}`, 20, 80);
@@ -124,7 +157,7 @@ export default function AprobacionReserva() {
     doc.text("Por medio de la presente confirmamos su reserva de espacio para embarque a bordo de la", 20, 96);
     doc.text("Nave en referencia. Datos del embarque como sigue:", 20, 102);
 
-    // --- TABLA DE DATOS ---
+    // --- TABLA DE DATOS (AHORA 100% DINÁMICA) ---
     autoTable(doc, {
       startY: 110,
       margin: { left: 20, right: 20 },
@@ -136,9 +169,9 @@ export default function AprobacionReserva() {
         ["DESTINO FINAL", `: ${destino.toUpperCase()}`],
         ["PRODUCTOS", `: ${mercancia.toUpperCase()}`],
         ["CONTAINERS", `: ${contenedores.toUpperCase()}`],
-        ["CONDICION", `: ${tipoServicio}`],
-        ["EMBARQUE VIA", `: ALMACEN A SOLICITUD DEL CLIENTE`],
-        ["FLETE MARÍTIMO", `: AS PER AGREEMENT`]
+        ["CONDICION", `: ${tipoServicio.toUpperCase()}`],
+        ["EMBARQUE VIA", `: ${embarqueVia.toUpperCase()}`],
+        ["FLETE MARÍTIMO", `: ${fleteMaritimo.toUpperCase()}`]
       ],
       theme: 'plain',
       styles: { fontSize: 9, cellPadding: 3, font: "helvetica", fontStyle: "bold" },
@@ -193,44 +226,61 @@ export default function AprobacionReserva() {
 
       <div className="w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden">
         
-        <div className="bg-blue-900 text-white p-6 flex justify-between items-center">
-          <div className="w-2/3">
-            <input 
-              type="text" 
-              className="w-full bg-transparent border-b border-blue-400 text-2xl font-black tracking-wider outline-none focus:border-white placeholder-blue-300 mb-2"
-              value={naviera}
-              onChange={(e) => setNaviera(e.target.value)}
-              placeholder="Nombre de la Naviera (Ej: MAERSK)"
-              required
-            />
-            {/* NUEVO: CAMPOS DE CONTACTO DE LA NAVIERA */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+        <div className="bg-blue-900 text-white p-6 flex flex-col gap-4">
+          <div className="flex justify-between items-start">
+            <div className="w-2/3">
               <input 
                 type="text" 
-                className="bg-blue-800 border border-blue-700 text-xs p-1 rounded outline-none focus:ring-1 focus:ring-blue-300 placeholder-blue-400"
-                value={navieraOffice}
-                onChange={(e) => setNavieraOffice(e.target.value)}
-                placeholder="Dirección de la oficina"
+                className="w-full bg-transparent border-b border-blue-400 text-2xl font-black tracking-wider outline-none focus:border-white placeholder-blue-300 mb-2 uppercase"
+                value={naviera}
+                onChange={(e) => setNaviera(e.target.value)}
+                placeholder="Nombre de la Naviera (Ej: MAERSK)"
+                required
               />
-              <input 
-                type="text" 
-                className="bg-blue-800 border border-blue-700 text-xs p-1 rounded outline-none focus:ring-1 focus:ring-blue-300 placeholder-blue-400"
-                value={navieraTel}
-                onChange={(e) => setNavieraTel(e.target.value)}
-                placeholder="Teléfono"
-              />
-              <input 
-                type="email" 
-                className="bg-blue-800 border border-blue-700 text-xs p-1 rounded outline-none focus:ring-1 focus:ring-blue-300 placeholder-blue-400"
-                value={navieraEmail}
-                onChange={(e) => setNavieraEmail(e.target.value)}
-                placeholder="Email de contacto"
-              />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2">
+                <input 
+                  type="text" 
+                  className="bg-blue-800 border border-blue-700 text-xs p-1 rounded outline-none focus:ring-1 focus:ring-blue-300 placeholder-blue-400"
+                  value={navieraOffice}
+                  onChange={(e) => setNavieraOffice(e.target.value)}
+                  placeholder="Dirección de la oficina"
+                />
+                <input 
+                  type="text" 
+                  className="bg-blue-800 border border-blue-700 text-xs p-1 rounded outline-none focus:ring-1 focus:ring-blue-300 placeholder-blue-400"
+                  value={navieraTel}
+                  onChange={(e) => setNavieraTel(e.target.value)}
+                  placeholder="Teléfono"
+                />
+                <input 
+                  type="email" 
+                  className="bg-blue-800 border border-blue-700 text-xs p-1 rounded outline-none focus:ring-1 focus:ring-blue-300 placeholder-blue-400"
+                  value={navieraEmail}
+                  onChange={(e) => setNavieraEmail(e.target.value)}
+                  placeholder="Email de contacto"
+                />
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm font-bold text-blue-200">Estado de Solicitud:</p>
+              <p className="bg-green-500 text-white px-3 py-1 rounded-full font-bold text-sm inline-block mt-1 animate-pulse">APROBADO</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-bold text-blue-200">Estado de Solicitud:</p>
-            <p className="bg-green-500 text-white px-3 py-1 rounded-full font-bold text-sm inline-block mt-1 animate-pulse">APROBADO</p>
+          
+          {/* NUEVO: Subida de logo de la naviera */}
+          <div className="flex items-center gap-4 bg-blue-800/50 p-3 rounded-md border border-blue-700 w-full md:w-2/3">
+              {logoBase64 ? (
+                  <img src={logoBase64} alt="Logo Naviera" className="w-12 h-12 rounded border border-blue-300 object-cover bg-white p-1" />
+              ) : (
+                  <div className="w-12 h-12 rounded border border-dashed border-blue-400 bg-blue-800 flex items-center justify-center text-[10px] text-blue-300 text-center leading-tight">Sin Logo</div>
+              )}
+              <div>
+                  <label className="block text-[10px] font-bold text-blue-200 mb-1 uppercase">Logo de la Naviera (Cuadrado):</label>
+                  <input type="file" ref={fileInputRef} accept="image/*" onChange={handleLogoUpload} className="text-[10px] text-white file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-semibold file:bg-blue-100 file:text-blue-800 hover:file:bg-blue-200 cursor-pointer" />
+                  {logoBase64 && (
+                      <button type="button" onClick={() => setLogoBase64("")} className="text-[10px] text-red-300 hover:underline mt-1 block">Remover Logo</button>
+                  )}
+              </div>
           </div>
         </div>
 
@@ -269,7 +319,6 @@ export default function AprobacionReserva() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    {/* CAMBIO: Ahora dice "FECHA DE ZARPE" */}
                     <strong className="w-24 leading-tight">FECHA DE ZARPE:</strong>
                     <input type="date" className="flex-1 border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500" value={fechaActual} onChange={(e) => setFechaActual(e.target.value)} required />
                   </div>
@@ -283,37 +332,48 @@ export default function AprobacionReserva() {
                 </p>
               </div>
 
+              {/* TABLA DINÁMICA DE DATOS HEREDADOS Y EDITABLES */}
               <div className="bg-white p-4 border border-gray-300 grid grid-cols-1 gap-3 mb-6">
                 <div className="flex items-center gap-2">
-                  <strong className="w-40">SHIPPER:</strong>
-                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500" value={shipperNombre} onChange={(e) => setShipperNombre(e.target.value)} required />
+                  <strong className="w-40 text-xs">SHIPPER:</strong>
+                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500" value={shipperNombre} onChange={(e) => setShipperNombre(e.target.value)} required />
                 </div>
                 <div className="flex items-center gap-2">
-                  <strong className="w-40">CNEE:</strong>
-                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500" value={consignatarioNombre} onChange={(e) => setConsignatarioNombre(e.target.value)} required />
+                  <strong className="w-40 text-xs">CNEE:</strong>
+                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500" value={consignatarioNombre} onChange={(e) => setConsignatarioNombre(e.target.value)} required />
                 </div>
                 <div className="flex items-center gap-2">
-                  <strong className="w-40">PTO. DE EMBARQUE:</strong>
-                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500" value={puertoCargue} onChange={(e) => setPuertoCargue(e.target.value)} required />
+                  <strong className="w-40 text-xs">PTO. DE EMBARQUE:</strong>
+                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500" value={puertoCargue} onChange={(e) => setPuertoCargue(e.target.value)} required />
                 </div>
                 <div className="flex items-center gap-2">
-                  <strong className="w-40">DESTINO FINAL:</strong>
-                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500" value={destino} onChange={(e) => setDestino(e.target.value)} required />
+                  <strong className="w-40 text-xs">DESTINO FINAL:</strong>
+                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500" value={destino} onChange={(e) => setDestino(e.target.value)} required />
                 </div>
                 <div className="flex items-center gap-2">
-                  <strong className="w-40">PRODUCTOS:</strong>
-                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500" value={mercancia} onChange={(e) => setMercancia(e.target.value)} required />
+                  <strong className="w-40 text-xs">PRODUCTOS:</strong>
+                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500" value={mercancia} onChange={(e) => setMercancia(e.target.value)} required />
                 </div>
                 <div className="flex items-center gap-2">
-                  <strong className="w-40">CONTAINERS:</strong>
-                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500" value={contenedores} onChange={(e) => setContenedores(e.target.value)} required />
+                  <strong className="w-40 text-xs">CONTAINERS:</strong>
+                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500" value={contenedores} onChange={(e) => setContenedores(e.target.value)} required />
                 </div>
                 <div className="flex items-center gap-2">
-                  <strong className="w-40">CONDICION:</strong>
-                  <select className="flex-1 border border-gray-300 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500 bg-white" value={tipoServicio} onChange={(e) => setTipoServicio(e.target.value)} required>
+                  <strong className="w-40 text-xs">CONDICION:</strong>
+                  <select className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500 bg-white" value={tipoServicio} onChange={(e) => setTipoServicio(e.target.value)} required>
                     <option value="FCL">FCL</option>
                     <option value="LCL">LCL</option>
                   </select>
+                </div>
+                
+                {/* NUEVOS CAMPOS EDITABLES EN LA TABLA */}
+                <div className="flex items-center gap-2">
+                  <strong className="w-40 text-xs">EMBARQUE VIA:</strong>
+                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500" value={embarqueVia} onChange={(e) => setEmbarqueVia(e.target.value)} required />
+                </div>
+                <div className="flex items-center gap-2">
+                  <strong className="w-40 text-xs">FLETE MARÍTIMO:</strong>
+                  <input type="text" className="flex-1 border border-gray-300 rounded px-2 py-1 text-xs outline-none focus:ring-1 focus:ring-blue-500" value={fleteMaritimo} onChange={(e) => setFleteMaritimo(e.target.value)} required />
                 </div>
               </div>
 

@@ -54,7 +54,7 @@ export default function FacturaComercial() {
 
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
-    const borradorGuardado = sessionStorage.getItem("borrador_factura_comercial_v2");
+    const borradorGuardado = sessionStorage.getItem("borrador_factura_comercial_v3");
     let factActual = "";
 
     if (borradorGuardado) {
@@ -113,7 +113,7 @@ export default function FacturaComercial() {
         fleteNacionalOrigen, gastosExportacion, fleteInternacional, seguro, 
         movimientoContenedor, fleteNacionalDestino, gastosImportacion
       };
-      sessionStorage.setItem("borrador_factura_comercial_v2", JSON.stringify(borradorActual));
+      sessionStorage.setItem("borrador_factura_comercial_v3", JSON.stringify(borradorActual));
     }
   });
 
@@ -256,22 +256,22 @@ export default function FacturaComercial() {
       }
     };
 
-    // Cascada de Incoterms
-    if (["FOB", "CIF", "DAP", "DPU", "DDP"].includes(incoterm)) {
+    // Cascada de Incoterms actualizada
+    if (incoterm !== "EXW") {
       agregarFilaCosto("Flete Nac. Origen:", fleteNacionalOrigen);
       agregarFilaCosto("Gastos de Exportación:", gastosExportacion);
     }
-    if (["CIF", "DAP", "DPU", "DDP"].includes(incoterm)) {
+    if (["CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"].includes(incoterm)) {
       agregarFilaCosto("Flete Internacional:", fleteInternacional);
+    }
+    if (["CIF", "CIP", "DAP", "DPU", "DDP"].includes(incoterm)) {
       agregarFilaCosto("Seguro Internacional:", seguro);
     }
     if (["DAP", "DPU", "DDP"].includes(incoterm)) {
       agregarFilaCosto("Movimiento Contenedor:", movimientoContenedor);
-    }
-    if (["DPU", "DDP"].includes(incoterm)) {
       agregarFilaCosto("Flete Nac. Destino:", fleteNacionalDestino);
     }
-    if (["DDP"].includes(incoterm)) {
+    if (incoterm === "DDP") {
       agregarFilaCosto("Gastos de Importación:", gastosImportacion);
     }
 
@@ -487,12 +487,17 @@ export default function FacturaComercial() {
               <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
                 <label className="text-sm font-bold text-gray-700 whitespace-nowrap">Incoterm Negociado:</label>
                 <select className="border border-gray-400 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white font-bold w-full sm:w-auto" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} required>
-                  <option value="EXW">EXW</option>
-                  <option value="FOB">FOB</option>
-                  <option value="CIF">CIF</option>
-                  <option value="DAP">DAP</option>
-                  <option value="DPU">DPU</option>
-                  <option value="DDP">DDP</option>
+                  <option value="EXW">EXW - Ex Works</option>
+                  <option value="FCA">FCA - Free Carrier</option>
+                  <option value="FAS">FAS - Free Alongside Ship</option>
+                  <option value="FOB">FOB - Free On Board</option>
+                  <option value="CFR">CFR - Cost and Freight</option>
+                  <option value="CIF">CIF - Cost, Insurance and Freight</option>
+                  <option value="CPT">CPT - Carriage Paid To</option>
+                  <option value="CIP">CIP - Carriage and Insurance Paid To</option>
+                  <option value="DAP">DAP - Delivered At Place</option>
+                  <option value="DPU">DPU - Delivered at Place Unloaded</option>
+                  <option value="DDP">DDP - Delivered Duty Paid</option>
                 </select>
                 <input 
                   type="text" 
@@ -508,7 +513,7 @@ export default function FacturaComercial() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              {["FOB", "CIF", "DAP", "DPU", "DDP"].includes(incoterm) && (
+              {incoterm !== "EXW" && (
                 <>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nacional Origen (USD)</label>
@@ -521,12 +526,17 @@ export default function FacturaComercial() {
                 </>
               )}
 
-              {["CIF", "DAP", "DPU", "DDP"].includes(incoterm) && (
+              {["CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"].includes(incoterm) && (
                 <>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Flete Internacional (USD)</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={fleteInternacional} onChange={(e) => setFleteInternacional(e.target.value)} />
                   </div>
+                </>
+              )}
+              
+              {["CIF", "CIP", "DAP", "DPU", "DDP"].includes(incoterm) && (
+                <>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Seguro Internacional (USD)</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={seguro} onChange={(e) => setSeguro(e.target.value)} />
@@ -535,22 +545,21 @@ export default function FacturaComercial() {
               )}
 
               {["DAP", "DPU", "DDP"].includes(incoterm) && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Movimiento Contenedor (USD)</label>
-                  <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={movimientoContenedor} onChange={(e) => setMovimientoContenedor(e.target.value)} />
-                </div>
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Movimiento Contenedor Destino (USD)</label>
+                    <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={movimientoContenedor} onChange={(e) => setMovimientoContenedor(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nac. Destino (USD)</label>
+                    <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={fleteNacionalDestino} onChange={(e) => setFleteNacionalDestino(e.target.value)} />
+                  </div>
+                </>
               )}
 
-              {["DPU", "DDP"].includes(incoterm) && (
+              {incoterm === "DDP" && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nac. Destino (USD)</label>
-                  <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={fleteNacionalDestino} onChange={(e) => setFleteNacionalDestino(e.target.value)} />
-                </div>
-              )}
-
-              {["DDP"].includes(incoterm) && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Gastos de Importación (USD)</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Gastos de Importación (Impuestos) (USD)</label>
                   <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={gastosImportacion} onChange={(e) => setGastosImportacion(e.target.value)} />
                 </div>
               )}

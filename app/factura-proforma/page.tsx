@@ -17,7 +17,7 @@ export default function FacturaProforma() {
   const [numeroPedido, setNumeroPedido] = useState(""); 
   const [fechaElaboracion, setFechaElaboracion] = useState("");
 
-  // --- DATOS DE IDENTIFICACIÓN: EXPORTADOR (TÚ / EMISOR) ---
+  // --- DATOS DE IDENTIFICACIÓN: EXPORTADOR ---
   const [expRazonSocial, setExpRazonSocial] = useState("");
   const [expEmail, setExpEmail] = useState("");
   const [expTelefono, setExpTelefono] = useState("");
@@ -25,7 +25,7 @@ export default function FacturaProforma() {
   const [expDireccion, setExpDireccion] = useState("");
   const [expCiudadPais, setExpCiudadPais] = useState("");
 
-  // --- DATOS DE IDENTIFICACIÓN: IMPORTADOR (CLIENTE / RECEPTOR) ---
+  // --- DATOS DE IDENTIFICACIÓN: IMPORTADOR ---
   const [impRazonSocial, setImpRazonSocial] = useState("Estudiante de Comercio Exterior S.A.");
   const [impEmail, setImpEmail] = useState("");
   const [impTelefono, setImpTelefono] = useState("");
@@ -54,7 +54,7 @@ export default function FacturaProforma() {
 
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
-    const borradorGuardado = sessionStorage.getItem("borrador_factura_proforma_v2");
+    const borradorGuardado = sessionStorage.getItem("borrador_factura_proforma_v3");
     let profActual = "";
 
     if (borradorGuardado) {
@@ -113,7 +113,7 @@ export default function FacturaProforma() {
         fleteNacionalOrigen, gastosExportacion, fleteInternacional, seguro, 
         movimientoContenedor, fleteNacionalDestino, gastosImportacion
       };
-      sessionStorage.setItem("borrador_factura_proforma_v2", JSON.stringify(borradorActual));
+      sessionStorage.setItem("borrador_factura_proforma_v3", JSON.stringify(borradorActual));
     }
   });
 
@@ -169,7 +169,6 @@ export default function FacturaProforma() {
     doc.setTextColor(234, 88, 12); 
     doc.text("FACTURA PROFORMA", 190, 22, { align: "right" });
     
-    // Aquí ubicamos el bloque de referencias a la derecha, debajo del título
     doc.setFontSize(10);
     doc.setTextColor(50, 50, 50);
     doc.setFont("helvetica", "normal");
@@ -178,13 +177,12 @@ export default function FacturaProforma() {
     doc.text(`Fecha elaboración: ${fechaElaboracion}`, 190, 42, { align: "right" });
 
     // --- LÍNEA DIVISORIA DINÁMICA ---
-    // Aseguramos que la línea baje lo suficiente sin importar si hay logo o no
     const lineY = Math.max(empresaY + 12, 50);
     doc.line(20, lineY, 190, lineY);
     
-    // --- BLOQUE DE COLUMNAS (AHORA SOLO 2 COLUMNAS PARA QUE NO CHOQUEN) ---
+    // --- BLOQUE DE COLUMNAS (EXPORTADOR E IMPORTADOR) ---
     doc.setFont("helvetica", "bold");
-    doc.text("Exportador (Emisor):", 20, lineY + 7);
+    doc.text("Exportador:", 20, lineY + 7);
     doc.setFont("helvetica", "normal");
     doc.text(`Razón Social: ${expRazonSocial}`, 20, lineY + 13);
     doc.text(`NIT: ${expNit}`, 20, lineY + 19);
@@ -193,9 +191,8 @@ export default function FacturaProforma() {
     doc.text(`Email: ${expEmail}`, 20, lineY + 37);
     doc.text(`Tel: ${expTelefono}`, 20, lineY + 43);
 
-    // Movimos al importador hacia la derecha (X: 105) dándole mucho más espacio
     doc.setFont("helvetica", "bold");
-    doc.text("Importador (Receptor):", 105, lineY + 7);
+    doc.text("Importador:", 105, lineY + 7);
     doc.setFont("helvetica", "normal");
     doc.text(`Razón Social: ${impRazonSocial}`, 105, lineY + 13);
     doc.text(`NIT: ${impNit}`, 105, lineY + 19);
@@ -257,22 +254,22 @@ export default function FacturaProforma() {
       }
     };
 
-    // Cascada de Incoterms
-    if (["FOB", "CIF", "DAP", "DPU", "DDP"].includes(incoterm)) {
+    // Cascada de Incoterms (Lógica actualizada para todos los incoterms)
+    if (incoterm !== "EXW") {
       agregarFilaCosto("Flete Nac. Origen:", fleteNacionalOrigen);
       agregarFilaCosto("Gastos de Exportación:", gastosExportacion);
     }
-    if (["CIF", "DAP", "DPU", "DDP"].includes(incoterm)) {
+    if (["CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"].includes(incoterm)) {
       agregarFilaCosto("Flete Internacional:", fleteInternacional);
+    }
+    if (["CIF", "CIP", "DAP", "DPU", "DDP"].includes(incoterm)) {
       agregarFilaCosto("Seguro Internacional:", seguro);
     }
     if (["DAP", "DPU", "DDP"].includes(incoterm)) {
       agregarFilaCosto("Movimiento Contenedor:", movimientoContenedor);
-    }
-    if (["DPU", "DDP"].includes(incoterm)) {
       agregarFilaCosto("Flete Nac. Destino:", fleteNacionalDestino);
     }
-    if (["DDP"].includes(incoterm)) {
+    if (incoterm === "DDP") {
       agregarFilaCosto("Gastos de Importación:", gastosImportacion);
     }
 
@@ -382,7 +379,7 @@ export default function FacturaProforma() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-orange-50 p-5 rounded-lg border border-orange-200 shadow-sm">
-              <h4 className="font-bold text-orange-700 mb-4 border-b border-orange-200 pb-2">Datos del Exportador (Tú)</h4>
+              <h4 className="font-bold text-orange-700 mb-4 border-b border-orange-200 pb-2">Datos del Exportador</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
                   <label className="block text-[10px] font-bold text-gray-700 mb-1 uppercase">Razón Social</label>
@@ -412,7 +409,7 @@ export default function FacturaProforma() {
             </div>
 
             <div className="bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
-              <h4 className="font-bold text-gray-700 mb-4 border-b border-gray-200 pb-2">Datos del Importador (Cliente)</h4>
+              <h4 className="font-bold text-gray-700 mb-4 border-b border-gray-200 pb-2">Datos del Importador</h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
                   <label className="block text-[10px] font-bold text-gray-700 mb-1 uppercase">Razón Social</label>
@@ -489,12 +486,17 @@ export default function FacturaProforma() {
               <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
                 <label className="text-sm font-bold text-gray-700 whitespace-nowrap">Incoterm Negociado:</label>
                 <select className="border border-gray-400 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500 bg-white font-bold w-full sm:w-auto" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} required>
-                  <option value="EXW">EXW</option>
-                  <option value="FOB">FOB</option>
-                  <option value="CIF">CIF</option>
-                  <option value="DAP">DAP</option>
-                  <option value="DPU">DPU</option>
-                  <option value="DDP">DDP</option>
+                  <option value="EXW">EXW - Ex Works</option>
+                  <option value="FCA">FCA - Free Carrier</option>
+                  <option value="FAS">FAS - Free Alongside Ship</option>
+                  <option value="FOB">FOB - Free On Board</option>
+                  <option value="CFR">CFR - Cost and Freight</option>
+                  <option value="CIF">CIF - Cost, Insurance and Freight</option>
+                  <option value="CPT">CPT - Carriage Paid To</option>
+                  <option value="CIP">CIP - Carriage and Insurance Paid To</option>
+                  <option value="DAP">DAP - Delivered At Place</option>
+                  <option value="DPU">DPU - Delivered at Place Unloaded</option>
+                  <option value="DDP">DDP - Delivered Duty Paid</option>
                 </select>
                 <input 
                   type="text" 
@@ -510,7 +512,7 @@ export default function FacturaProforma() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               
-              {["FOB", "CIF", "DAP", "DPU", "DDP"].includes(incoterm) && (
+              {incoterm !== "EXW" && (
                 <>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nacional Origen (USD)</label>
@@ -523,12 +525,17 @@ export default function FacturaProforma() {
                 </>
               )}
 
-              {["CIF", "DAP", "DPU", "DDP"].includes(incoterm) && (
+              {["CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"].includes(incoterm) && (
                 <>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Flete Internacional (USD)</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={fleteInternacional} onChange={(e) => setFleteInternacional(e.target.value)} />
                   </div>
+                </>
+              )}
+              
+              {["CIF", "CIP", "DAP", "DPU", "DDP"].includes(incoterm) && (
+                <>
                   <div>
                     <label className="block text-xs font-bold text-gray-700 mb-1">Seguro Internacional (USD)</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={seguro} onChange={(e) => setSeguro(e.target.value)} />
@@ -537,22 +544,21 @@ export default function FacturaProforma() {
               )}
 
               {["DAP", "DPU", "DDP"].includes(incoterm) && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Movimiento Contenedor (USD)</label>
-                  <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={movimientoContenedor} onChange={(e) => setMovimientoContenedor(e.target.value)} />
-                </div>
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Movimiento Contenedor Destino (USD)</label>
+                    <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={movimientoContenedor} onChange={(e) => setMovimientoContenedor(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nac. Destino (USD)</label>
+                    <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={fleteNacionalDestino} onChange={(e) => setFleteNacionalDestino(e.target.value)} />
+                  </div>
+                </>
               )}
 
-              {["DPU", "DDP"].includes(incoterm) && (
+              {incoterm === "DDP" && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nac. Destino (USD)</label>
-                  <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={fleteNacionalDestino} onChange={(e) => setFleteNacionalDestino(e.target.value)} />
-                </div>
-              )}
-
-              {["DDP"].includes(incoterm) && (
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Gastos de Importación (USD)</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Gastos de Importación (Impuestos) (USD)</label>
                   <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={gastosImportacion} onChange={(e) => setGastosImportacion(e.target.value)} />
                 </div>
               )}

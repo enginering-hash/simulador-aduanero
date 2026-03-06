@@ -11,16 +11,16 @@ export default function CartaRetiroContenedor() {
   // --- LOGO DE LA TRANSPORTADORA ---
   const [logoBase64, setLogoBase64] = useState<string>("");
 
-  // --- DATOS TOTALMENTE EDITABLES ---
+  // --- DATOS TOTALMENTE EDITABLES (Sin valores fijos por defecto) ---
   const [fechaEmision, setFechaEmision] = useState("");
   const [bookingRef, setBookingRef] = useState("");
   const [contenedores, setContenedores] = useState("");
   const [shipperNombre, setShipperNombre] = useState("");
 
-  const [puertoOrigen, setPuertoOrigen] = useState("Buenaventura");
+  const [puertoOrigen, setPuertoOrigen] = useState(""); 
   const [puertoDestino, setPuertoDestino] = useState(""); 
-  const [naviera, setNaviera] = useState("ONE");
-  const [pesoBruto, setPesoBruto] = useState(""); 
+  const [naviera, setNaviera] = useState(""); 
+  const [pesoBruto, setPesoBruto] = useState(""); // Ahora no se heredará automáticamente
   const [patioVacio, setPatioVacio] = useState("");
   const [empresaTransporte, setEmpresaTransporte] = useState("");
 
@@ -28,23 +28,23 @@ export default function CartaRetiroContenedor() {
   useEffect(() => {
     const hoy = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
     
-    const borradorGuardado = sessionStorage.getItem("borrador_carta_retiro_v5");
+    const borradorGuardado = sessionStorage.getItem("borrador_carta_retiro_v7");
     
     if (borradorGuardado) {
       const datos = JSON.parse(borradorGuardado);
-      setLogoBase64(datos.logoBase64 || ""); // Cargar Logo
+      setLogoBase64(datos.logoBase64 || ""); 
       setFechaEmision(datos.fechaEmision || hoy);
       setBookingRef(datos.bookingRef || "");
       setContenedores(datos.contenedores || "");
       setShipperNombre(datos.shipperNombre || "");
-      setPuertoOrigen(datos.puertoOrigen || "Buenaventura");
+      setPuertoOrigen(datos.puertoOrigen || "");
       setPuertoDestino(datos.puertoDestino || "");
-      setNaviera(datos.naviera || "ONE");
+      setNaviera(datos.naviera || "");
       setPesoBruto(datos.pesoBruto || "");
       setPatioVacio(datos.patioVacio || "");
       setEmpresaTransporte(datos.empresaTransporte || "");
     } else {
-      // Precarga automática desde el Booking
+      // Precarga automática desde el Booking (EXCEPTO Peso Bruto, Puerto Origen y Naviera)
       setFechaEmision(hoy);
       const datosGuardados = localStorage.getItem('datosReserva');
       if (datosGuardados) {
@@ -53,7 +53,8 @@ export default function CartaRetiroContenedor() {
         if (parsed.contenedores) setContenedores(parsed.contenedores);
         if (parsed.shipperNombre) setShipperNombre(parsed.shipperNombre);
         if (parsed.destino) setPuertoDestino(parsed.destino);
-        if (parsed.pesoBruto) setPesoBruto(parsed.pesoBruto);
+        // CORRECCIÓN: Se eliminó la herencia de pesoBruto
+        // if (parsed.pesoBruto) setPesoBruto(parsed.pesoBruto); 
       }
     }
   }, []);
@@ -64,7 +65,7 @@ export default function CartaRetiroContenedor() {
       logoBase64, fechaEmision, bookingRef, contenedores, shipperNombre,
       puertoOrigen, puertoDestino, naviera, pesoBruto, patioVacio, empresaTransporte
     };
-    sessionStorage.setItem("borrador_carta_retiro_v5", JSON.stringify(borradorActual));
+    sessionStorage.setItem("borrador_carta_retiro_v7", JSON.stringify(borradorActual));
   });
 
   // FUNCIÓN PARA SUBIR Y CONVERTIR EL LOGO
@@ -119,7 +120,7 @@ export default function CartaRetiroContenedor() {
     doc.text(`Puerto Destino: ${puertoDestino}`, 110, 71);
     doc.text(`Peso Bruto: ${pesoBruto}`, 110, 78);
 
-    // --- CUERPO DE LA CARTA (CORREGIDO PARA USAR PUERTO DE ORIGEN) ---
+    // --- CUERPO DE LA CARTA ---
     const cuerpo = `Por medio de la presente, autorizamos a la empresa transportadora ${empresaTransporte.toUpperCase()} para realizar el retiro de los equipos vacíos en el patio ${patioVacio.toUpperCase()}. Una vez realizado el cargue de la mercancía con un peso bruto de ${pesoBruto}, el contenedor será trasladado para su ingreso lleno al puerto de ${puertoOrigen.toUpperCase()}.`;
     
     const lineas = doc.splitTextToSize(cuerpo, 170);
@@ -208,7 +209,7 @@ export default function CartaRetiroContenedor() {
           <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">PUERTO DE ORIGEN:</label>
-              <input type="text" className="w-full border p-2 text-sm rounded outline-none focus:ring-2 focus:ring-teal-500 bg-white" value={puertoOrigen} onChange={(e)=>setPuertoOrigen(e.target.value)} required/>
+              <input type="text" className="w-full border p-2 text-sm rounded outline-none focus:ring-2 focus:ring-teal-500 bg-white" placeholder="Ej. Buenaventura" value={puertoOrigen} onChange={(e)=>setPuertoOrigen(e.target.value)} required/>
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">PUERTO DE DESTINO:</label>
@@ -220,7 +221,7 @@ export default function CartaRetiroContenedor() {
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">LÍNEA NAVIERA:</label>
-              <input type="text" className="w-full border p-2 text-sm rounded outline-none focus:ring-2 focus:ring-teal-500 bg-white" value={naviera} onChange={(e)=>setNaviera(e.target.value)} required/>
+              <input type="text" className="w-full border p-2 text-sm rounded outline-none focus:ring-2 focus:ring-teal-500 bg-white" placeholder="Ej. ONE, MAERSK, HAPAG LLOYD" value={naviera} onChange={(e)=>setNaviera(e.target.value)} required/>
             </div>
           </section>
 
@@ -248,8 +249,9 @@ export default function CartaRetiroContenedor() {
             Generar y Descargar Carta de Retiro (PDF)
           </button>
 
-          <Link href="/declaracion-exportacion" className="w-full block text-center bg-teal-100 text-teal-800 font-bold py-4 px-4 rounded-md hover:bg-teal-200 transition-colors mt-4 text-lg">
-            Siguiente Paso: Declaración de Exportación →
+          {/* CORRECCIÓN: Ahora enlaza a la Declaración de Importación */}
+          <Link href="/declaracion-importacion" className="w-full block text-center bg-teal-100 text-teal-800 font-bold py-4 px-4 rounded-md hover:bg-teal-200 transition-colors mt-4 text-lg">
+            Siguiente Paso: Declaración de Importación (Form 500) →
           </Link>
         </form>
       </div>

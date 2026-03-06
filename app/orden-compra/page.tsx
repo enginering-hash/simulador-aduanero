@@ -129,7 +129,6 @@ export default function OrdenDeCompra() {
 
     // --- LOGO (SI EXISTE) ---
     if (logoBase64) {
-      // AJUSTE: Hecho cuadrado (25x25)
       doc.addImage(logoBase64, 20, 10, 25, 25);
     }
 
@@ -137,26 +136,20 @@ export default function OrdenDeCompra() {
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(16, 185, 129); // Verde esmeralda
-    // AJUSTE DE POSICIÓN: Bajado ligeramente (Y=25 vs Y=22) para acomodar el logo cuadrado más alto
     doc.text("ORDEN DE COMPRA (PO)", 190, 25, { align: "right" });
 
     // --- FECHAS Y REFERENCIAS ---
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(50, 50, 50);
-    // AJUSTE DE POSICIÓN: Bajado ligeramente
     doc.text(`N° de Orden: ${numeroOrden}`, 190, 33, { align: "right" });
     
-    // Las fechas se quedan a la izquierda, debajo del espacio del logo
-    // AJUSTE DE POSICIÓN: Bajadas para dejar aire con el logo cuadrado
     doc.text(`Fecha de Elaboración: ${fechaEntrega}`, 20, 43);
     doc.text(`Lugar de Entrega: ${lugarEntrega}`, 20, 49);
     
     // --- DATOS DE IDENTIFICACIÓN ---
-    // AJUSTE DE POSICIÓN: Bajada la línea divisoria
     doc.line(20, 55, 190, 55); 
     
-    // AJUSTE DE POSICIÓN: Bajados todos los bloques de datos
     const yDatos = 63;
 
     // Columna Izquierda: Importador
@@ -282,7 +275,6 @@ export default function OrdenDeCompra() {
             {logoBase64 && (
               <div className="flex flex-col items-center">
                 <span className="text-[10px] text-gray-400 mb-1">Vista Previa</span>
-                {/* AJUSTE: Hecho cuadrado en la vista previa de la página (h-20 w-20) */}
                 <img src={logoBase64} alt="Logo Preview" className="h-20 w-20 object-contain border border-gray-200 rounded p-1 shadow-sm" />
                 <button type="button" onClick={() => setLogoBase64("")} className="text-xs text-red-500 hover:underline mt-1">Quitar logo</button>
               </div>
@@ -380,8 +372,13 @@ export default function OrdenDeCompra() {
                 <select className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} required>
                   <option value="" disabled>Selecciona un Incoterm...</option>
                   <option value="EXW">EXW - Ex Works</option>
+                  <option value="FCA">FCA - Free Carrier</option>
+                  <option value="FAS">FAS - Free Alongside Ship</option>
                   <option value="FOB">FOB - Free On Board</option>
+                  <option value="CFR">CFR - Cost and Freight</option>
                   <option value="CIF">CIF - Cost, Insurance and Freight</option>
+                  <option value="CPT">CPT - Carriage Paid To</option>
+                  <option value="CIP">CIP - Carriage and Insurance Paid To</option>
                   <option value="DAP">DAP - Delivered At Place</option>
                   <option value="DPU">DPU - Delivered at Place Unloaded</option>
                   <option value="DDP">DDP - Delivered Duty Paid</option>
