@@ -17,7 +17,6 @@ export default function MenuPrincipal() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           
           {/* Botón / Tarjeta de Importación */}
-          {/* Nota: Por ahora ambos botones llevan a "/factura", luego los separaremos en la etapa final */}
           <Link 
             href="/orden-compra" 
             className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-10 border-t-8 border-blue-500 flex flex-col items-center text-center cursor-pointer hover:-translate-y-2"
@@ -34,7 +33,7 @@ export default function MenuPrincipal() {
 
           {/* Botón / Tarjeta de Exportación */}
           <Link 
-            href="/factura" 
+            href="/orden-compra-exportacion" 
             className="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-10 border-t-8 border-green-500 flex flex-col items-center text-center cursor-pointer hover:-translate-y-2"
           >
             <div className="text-7xl mb-6">🛫</div>

@@ -318,8 +318,8 @@ export default function DeclaracionExportacion() {
         <button onClick={handleSubmit} type="button" className="flex-1 bg-[#008f39] text-white font-bold py-3 rounded shadow-md hover:bg-[#006f2c] transition-all text-sm border-b-4 border-[#005220]">
           📥 Descargar Declaración de Exportación (PDF)
         </button>
-        <Link href="/factura" className="flex-1 bg-gray-800 text-white font-bold py-3 rounded shadow-md hover:bg-black text-center text-sm border-b-4 border-gray-900 flex items-center justify-center">
-          Paso 8: Factura Comercial Final →
+        <Link href="/factura-exportacion" className="flex-1 bg-gray-800 text-white font-bold py-3 rounded shadow-md hover:bg-black text-center text-sm border-b-4 border-gray-900 flex items-center justify-center">
+          Paso 8: Factura Comercial →
         </Link>
       </div>
 

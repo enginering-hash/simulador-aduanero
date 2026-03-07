@@ -305,8 +305,8 @@ export default function CartaResponsabilidad() {
             <button type="submit" className="flex-1 bg-blue-900 text-white font-bold py-4 rounded shadow-lg hover:bg-blue-950 transition-all text-lg border-b-4 border-gray-900">
               📥 Descargar Carta a Policía (PDF)
             </button>
-            <Link href="/certificado-lote" className="flex-1 bg-teal-600 text-white font-bold py-4 rounded shadow-lg hover:bg-teal-700 text-center text-lg border-b-4 border-teal-800 flex items-center justify-center">
-              Siguiente Paso: Certificado de Lote →
+            <Link href="/certificado-ica-exportacion" className="flex-1 bg-teal-600 text-white font-bold py-4 rounded shadow-lg hover:bg-teal-700 text-center text-lg border-b-4 border-teal-800 flex items-center justify-center">
+              Siguiente Paso: Certificado ICA →
             </Link>
           </div>
 
