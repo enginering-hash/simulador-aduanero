@@ -9,7 +9,8 @@ export default function CartaResponsabilidad() {
   const router = useRouter(); 
 
   // --- DATOS DEL REPRESENTANTE LEGAL Y EMPRESA ---
-  const [ciudadFecha, setCiudadFecha] = useState("");
+  const [ciudadEmision, setCiudadEmision] = useState("Buenaventura");
+  const [fechaEmision, setFechaEmision] = useState("");
   const [empresa, setEmpresa] = useState("");
   const [nit, setNit] = useState("");
   const [direccionEmpresa, setDireccionEmpresa] = useState("");
@@ -27,14 +28,15 @@ export default function CartaResponsabilidad() {
   const [pesoBruto, setPesoBruto] = useState("");
   const [reservaContenedor, setReservaContenedor] = useState("");
 
-  // CARGAR LOS DATOS AL ABRIR LA PÁGINA (Borrador o Nuevo)
+  // CARGAR LOS DATOS AL ABRIR LA PÁGINA 
   useEffect(() => {
-    const borradorGuardado = sessionStorage.getItem("borrador_carta_responsabilidad");
+    // Aumenté la versión de la variable de sesión para que cargue limpio la primera vez
+    const borradorGuardado = sessionStorage.getItem("borrador_carta_responsabilidad_expo_v2");
 
     if (borradorGuardado) {
-      // Restauramos los datos desde el borrador temporal
       const datos = JSON.parse(borradorGuardado);
-      setCiudadFecha(datos.ciudadFecha || "");
+      setCiudadEmision(datos.ciudadEmision || "Buenaventura");
+      setFechaEmision(datos.fechaEmision || "");
       setEmpresa(datos.empresa || "");
       setNit(datos.nit || "");
       setDireccionEmpresa(datos.direccionEmpresa || "");
@@ -49,12 +51,11 @@ export default function CartaResponsabilidad() {
       setPesoBruto(datos.pesoBruto || "");
       setReservaContenedor(datos.reservaContenedor || "");
     } else {
-      // Si NO hay borrador, generamos fecha y heredamos datos del Booking
-      const hoy = new Date();
-      const opcionesFecha: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-      setCiudadFecha(`Buenaventura, ${hoy.toLocaleDateString('es-ES', opcionesFecha)}`);
+      // Si NO hay borrador, generamos fecha y heredamos datos del Booking de Exportación
+      const hoy = new Date().toISOString().split('T')[0];
+      setFechaEmision(hoy);
 
-      const datosGuardados = localStorage.getItem('datosReserva');
+      const datosGuardados = localStorage.getItem('datosReservaExpo');
       if (datosGuardados) {
         const parsed = JSON.parse(datosGuardados);
         setEmpresa(parsed.shipperNombre || "");
@@ -71,13 +72,22 @@ export default function CartaResponsabilidad() {
   // GUARDAR LOS DATOS CADA VEZ QUE ESCRIBES ALGO
   useEffect(() => {
     const borradorActual = {
-      ciudadFecha, empresa, nit, direccionEmpresa, telefonoEmpresa,
+      ciudadEmision, fechaEmision, empresa, nit, direccionEmpresa, telefonoEmpresa,
       representanteLegal, cedulaRepresentante, agenciaAduanas,
       puertoEmbarque, puertoDestino, consignatario, mercancia,
       pesoBruto, reservaContenedor
     };
-    sessionStorage.setItem("borrador_carta_responsabilidad", JSON.stringify(borradorActual));
+    sessionStorage.setItem("borrador_carta_responsabilidad_expo_v2", JSON.stringify(borradorActual));
   });
+
+  const formatearFechaLarga = (fechaCorta: string) => {
+    if (!fechaCorta) return "";
+    // Separamos la fecha para evitar desfases de zona horaria
+    const partes = fechaCorta.split('-');
+    const fecha = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+    const opciones: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+    return fecha.toLocaleDateString('es-ES', opciones);
+  };
 
   const generarPDF = (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,12 +97,11 @@ export default function CartaResponsabilidad() {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     const margenIzquierdo = 25;
-    
-    // ¡SOLUCIÓN!: Se ajustó cursorY de 40 a 20 para subir todo el texto en el PDF.
     let cursorY = 20;
 
     // --- FECHA Y DESTINATARIO ---
-    doc.text(ciudadFecha, margenIzquierdo, cursorY);
+    const fechaLarga = formatearFechaLarga(fechaEmision);
+    doc.text(`${ciudadEmision}, ${fechaLarga}`, margenIzquierdo, cursorY);
     cursorY += 15;
 
     doc.setFont("helvetica", "bold");
@@ -186,7 +195,7 @@ export default function CartaResponsabilidad() {
     cursorY += 6;
     doc.text(`Dirección: ${direccionEmpresa} | Teléfono: ${telefonoEmpresa}`, margenIzquierdo, cursorY);
 
-    doc.save(`Carta_Antinarcoticos_${empresa.replace(/\s+/g, '_')}.pdf`);
+    doc.save(`Carta_Antinarcoticos_Exportacion_${empresa.replace(/\s+/g, '_')}.pdf`);
   };
 
   return (
@@ -196,7 +205,7 @@ export default function CartaResponsabilidad() {
         <button 
           onClick={() => router.back()} 
           type="button"
-          className="bg-white text-blue-900 border border-blue-900 px-4 py-2 rounded font-bold hover:bg-blue-50 transition-colors flex items-center gap-2 shadow-sm">
+          className="bg-white text-slate-800 border border-slate-800 px-4 py-2 rounded font-bold hover:bg-slate-50 transition-colors flex items-center gap-2 shadow-sm">
           ← Devolverme al Paso Anterior
         </button>
         <Link href="/" className="text-gray-500 font-bold hover:text-gray-800 flex items-center gap-2">
@@ -204,15 +213,15 @@ export default function CartaResponsabilidad() {
         </Link>
       </div>
 
-      <div className="w-full max-w-4xl bg-white rounded-xl shadow-2xl border-t-8 border-blue-900 overflow-hidden">
+      <div className="w-full max-w-4xl bg-white rounded-xl shadow-2xl border-t-8 border-slate-800 overflow-hidden">
         
-        <div className="bg-blue-50 p-6 border-b border-blue-200">
+        <div className="bg-slate-50 p-6 border-b border-slate-200">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-900 text-white rounded-full flex items-center justify-center font-black text-xl shadow-md">PONAL</div>
+            <div className="w-12 h-12 bg-slate-800 text-white rounded-full flex items-center justify-center font-black text-xl shadow-md">PONAL</div>
             <div>
-              <h2 className="font-black text-2xl text-blue-950 uppercase tracking-tight">Carta de Responsabilidad (Antinarcóticos)</h2>
-              <p className="text-sm text-blue-800 font-medium">
-                Documento legal obligatorio asumiendo la responsabilidad penal y civil por el contenido de la carga.
+              <h2 className="font-black text-2xl text-slate-900 uppercase tracking-tight">Carta de Responsabilidad (Antinarcóticos)</h2>
+              <p className="text-sm text-slate-700 font-medium">
+                Documento legal obligatorio asumiendo la responsabilidad penal y civil por el contenido de la carga a exportar.
               </p>
             </div>
           </div>
@@ -220,18 +229,33 @@ export default function CartaResponsabilidad() {
 
         <form onSubmit={generarPDF} className="p-8 space-y-8">
           
+          {/* SECCIÓN 0: FECHA Y LUGAR */}
+          <section className="bg-white p-6 rounded-lg border border-gray-300 shadow-sm">
+            <h3 className="font-bold text-slate-800 mb-4 border-b-2 border-slate-100 pb-2">1. CIUDAD Y FECHA DE EMISIÓN</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">CIUDAD DE EMISIÓN:</label>
+                <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-slate-800 outline-none uppercase" value={ciudadEmision} onChange={(e)=>setCiudadEmision(e.target.value)} required />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">FECHA DE EMISIÓN:</label>
+                <input type="date" className="w-full border p-2 rounded focus:ring-2 focus:ring-slate-800 outline-none" value={fechaEmision} onChange={(e)=>setFechaEmision(e.target.value)} required />
+              </div>
+            </div>
+          </section>
+
           {/* SECCIÓN 1: REPRESENTANTE LEGAL */}
           <section className="bg-white p-6 rounded-lg border border-gray-300 shadow-sm">
-            <h3 className="font-bold text-blue-900 mb-4 border-b-2 border-blue-100 pb-2">1. DATOS DEL REPRESENTANTE LEGAL Y EMPRESA</h3>
+            <h3 className="font-bold text-slate-800 mb-4 border-b-2 border-slate-100 pb-2">2. DATOS DEL REPRESENTANTE LEGAL Y EMPRESA</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">NOMBRE COMPLETO (Rep. Legal):</label>
-                <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-900 outline-none uppercase" placeholder="Ej. Carlos Arturo Gómez" value={representanteLegal} onChange={(e)=>setRepresentanteLegal(e.target.value)} required />
+                <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-slate-800 outline-none uppercase" placeholder="Ej. Carlos Arturo Gómez" value={representanteLegal} onChange={(e)=>setRepresentanteLegal(e.target.value)} required />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">CÉDULA DE CIUDADANÍA:</label>
-                <input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-900 outline-none" placeholder="Ej. 16.789.456" value={cedulaRepresentante} onChange={(e)=>setCedulaRepresentante(e.target.value)} required />
+                <input type="number" className="w-full border p-2 rounded focus:ring-2 focus:ring-slate-800 outline-none" placeholder="Ej. 16.789.456" value={cedulaRepresentante} onChange={(e)=>setCedulaRepresentante(e.target.value)} required />
               </div>
             </div>
 
@@ -242,29 +266,29 @@ export default function CartaResponsabilidad() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">NIT:</label>
-                <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-900 outline-none" placeholder="Ej. 900.123.456-7" value={nit} onChange={(e)=>setNit(e.target.value)} required />
+                <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-slate-800 outline-none" placeholder="Ej. 900.123.456-7" value={nit} onChange={(e)=>setNit(e.target.value)} required />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">DIRECCIÓN DE LA EMPRESA:</label>
-                <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-900 outline-none" placeholder="Ej. Calle 100 # 15-20, Bogotá" value={direccionEmpresa} onChange={(e)=>setDireccionEmpresa(e.target.value)} required />
+                <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-slate-800 outline-none" placeholder="Ej. Calle 100 # 15-20, Bogotá" value={direccionEmpresa} onChange={(e)=>setDireccionEmpresa(e.target.value)} required />
               </div>
               <div>
                 <label className="block text-xs font-bold text-gray-700 mb-1">TELÉFONO DE CONTACTO:</label>
-                <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-900 outline-none" placeholder="Ej. (601) 555-1234" value={telefonoEmpresa} onChange={(e)=>setTelefonoEmpresa(e.target.value)} required />
+                <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-slate-800 outline-none" placeholder="Ej. (601) 555-1234" value={telefonoEmpresa} onChange={(e)=>setTelefonoEmpresa(e.target.value)} required />
               </div>
             </div>
           </section>
 
-          {/* SECCIÓN 2: DATOS DE LA CARGA (PRECABADOS) */}
-          <section className="bg-blue-50/50 p-6 rounded-lg border border-blue-100">
-            <h3 className="font-bold text-blue-900 mb-4 border-b-2 border-blue-200 pb-2">2. DETALLES DE LA EXPORTACIÓN (Precargados)</h3>
+          {/* SECCIÓN 2: DATOS DE LA CARGA (PRECARGADOS) */}
+          <section className="bg-slate-50/50 p-6 rounded-lg border border-slate-200">
+            <h3 className="font-bold text-slate-800 mb-4 border-b-2 border-slate-200 pb-2">3. DETALLES DE LA EXPORTACIÓN (Precargados)</h3>
             
             <div className="mb-4">
               <label className="block text-xs font-bold text-gray-700 mb-1">AGENCIA DE ADUANAS (SIA):</label>
-              <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-blue-900 outline-none uppercase" placeholder="Ej. Agencia de Aduanas Nivel 1 S.A." value={agenciaAduanas} onChange={(e)=>setAgenciaAduanas(e.target.value)} required />
+              <input type="text" className="w-full border p-2 rounded focus:ring-2 focus:ring-slate-800 outline-none uppercase" placeholder="Ej. Agencia de Aduanas Nivel 1 S.A." value={agenciaAduanas} onChange={(e)=>setAgenciaAduanas(e.target.value)} required />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -302,7 +326,7 @@ export default function CartaResponsabilidad() {
           </section>
 
           <div className="flex flex-col md:flex-row gap-4 pt-4">
-            <button type="submit" className="flex-1 bg-blue-900 text-white font-bold py-4 rounded shadow-lg hover:bg-blue-950 transition-all text-lg border-b-4 border-gray-900">
+            <button type="submit" className="flex-1 bg-slate-800 text-white font-bold py-4 rounded shadow-lg hover:bg-slate-900 transition-all text-lg border-b-4 border-black">
               📥 Descargar Carta a Policía (PDF)
             </button>
             <Link href="/certificado-ica-exportacion" className="flex-1 bg-teal-600 text-white font-bold py-4 rounded shadow-lg hover:bg-teal-700 text-center text-lg border-b-4 border-teal-800 flex items-center justify-center">
