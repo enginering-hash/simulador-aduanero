@@ -9,6 +9,9 @@ import { useRouter } from "next/navigation";
 export default function ListaEmpaque() {
   const router = useRouter(); 
 
+  // --- LOGO DE LA EMPRESA ---
+  const [logoBase64, setLogoBase64] = useState<string>("");
+
   // --- NÚMEROS Y FECHAS ---
   const [numeroLista, setNumeroLista] = useState("");
   const [fechaEmision, setFechaEmision] = useState("");
@@ -44,7 +47,7 @@ export default function ListaEmpaque() {
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
     const hoy = new Date().toISOString().split('T')[0];
-    const borradorGuardado = sessionStorage.getItem("borrador_lista_empaque_v8"); // Cambio de version para limpiar
+    const borradorGuardado = sessionStorage.getItem("borrador_lista_empaque_v8"); 
     
     const datosFactura = sessionStorage.getItem("borrador_factura_comercial_v3");
     let fData = datosFactura ? JSON.parse(datosFactura) : null;
@@ -55,6 +58,7 @@ export default function ListaEmpaque() {
       const datos = JSON.parse(borradorGuardado);
       plActual = datos.numeroLista || "";
       setFechaEmision(datos.fechaEmision || hoy);
+      setLogoBase64(datos.logoBase64 || ""); // Recuperar Logo
       
       setExpRazonSocial(datos.expRazonSocial || "");
       setExpEmail(datos.expEmail || "");
@@ -95,6 +99,8 @@ export default function ListaEmpaque() {
         setImpTelefono(fData.impTelefono || "");
         
         setIncoterm(fData.incoterm || "");
+        // Intentar recuperar el logo de la factura si existe
+        setLogoBase64(fData.logoBase64 || "");
       }
     }
 
@@ -109,7 +115,7 @@ export default function ListaEmpaque() {
   useEffect(() => {
     if (numeroLista) {
       const borradorActual = {
-        numeroLista, fechaEmision, 
+        numeroLista, fechaEmision, logoBase64,
         expRazonSocial, expEmail, expTelefono, expNit, expDireccion, expCiudadPais,
         impRazonSocial, impEmail, impTelefono, impNit, impDireccion, impCiudadPais,
         incoterm, formaPago, puertoEmbarque, puertoDestino,
@@ -118,6 +124,18 @@ export default function ListaEmpaque() {
       sessionStorage.setItem("borrador_lista_empaque_v8", JSON.stringify(borradorActual));
     }
   });
+
+  // FUNCIÓN PARA SUBIR LOGO
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoBase64(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const agregarProducto = () => {
     setProductos([...productos, { referencia: "", descripcion: "", subpartida: "", pesoBruto: "", pesoNeto: "", cajas: "", m3PorCaja: "", totalM3: "" }]);
@@ -148,15 +166,21 @@ export default function ListaEmpaque() {
     e.preventDefault(); 
     const doc = new jsPDF();
 
+    // --- LOGO ---
+    if (logoBase64) {
+      doc.addImage(logoBase64, 20, 10, 25, 25);
+    }
+
     // --- ENCABEZADO ---
     doc.setFontSize(20);
     doc.setFont("helvetica", "bold");
-    doc.text(expRazonSocial.toUpperCase() || "NOMBRE DEL EXPORTADOR", 20, 20);
+    const empresaY = logoBase64 ? 42 : 20; 
+    doc.text(expRazonSocial.toUpperCase() || "NOMBRE DEL EXPORTADOR", 20, empresaY);
     
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(50, 50, 50);
-    doc.text(expDireccion || "Dirección del Exportador", 20, 26);
+    doc.text(expDireccion || "Dirección del Exportador", 20, empresaY + 6);
 
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
@@ -169,7 +193,7 @@ export default function ListaEmpaque() {
     doc.text(`N° Packing List: ${numeroLista}`, 190, 30, { align: "right" });
     doc.text(`Fecha de Emisión: ${fechaEmision}`, 190, 36, { align: "right" });
 
-    const lineY = 45;
+    const lineY = Math.max(empresaY + 12, 50);
     doc.setDrawColor(150, 150, 150);
     doc.line(20, lineY, 190, lineY);
     
@@ -200,13 +224,11 @@ export default function ListaEmpaque() {
     doc.setFont("helvetica", "normal");
     doc.text(`Incoterm: ${incoterm}`, 20, infoY + 6);
     doc.text(`Forma de Pago: ${formaPago}`, 20, infoY + 12);
-    // Plazo de pago fue eliminado de aquí
     doc.text(`Puerto Origen: ${puertoEmbarque}`, 20, infoY + 18);
     doc.text(`Puerto Destino: ${puertoDestino}`, 20, infoY + 24);
     
-    // Resumen de Carga eliminado, la tabla sube para ocupar ese espacio
     // --- TABLA DE PRODUCTOS ---
-    const startTablaY = infoY + 32; // Se subió la tabla
+    const startTablaY = infoY + 32; 
     const columnas = ["ITEM", "REF", "DESCRIPCIÓN / NCM", "P. BRUTO", "P. NETO", "CAJAS", "M3 / CAJA", "TOTAL M3"];
     
     const filas = productos.map((prod, index) => [
@@ -263,6 +285,27 @@ export default function ListaEmpaque() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           
+          {/* UPLOAD DE LOGO */}
+          <div className="bg-white p-4 rounded-lg border-2 border-dashed border-slate-300 flex flex-col md:flex-row items-center gap-6 justify-between">
+            <div>
+              <label className="block text-sm font-bold text-slate-800 mb-2">Añadir Logo de tu Empresa (Opcional)</label>
+              <p className="text-xs text-gray-500 mb-3">Dale un toque profesional a tu PDF subiendo el logo de tu empresa.</p>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleLogoUpload} 
+                className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-bold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 cursor-pointer" 
+              />
+            </div>
+            {logoBase64 && (
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-gray-400 mb-1">Vista Previa</span>
+                <img src={logoBase64} alt="Logo Preview" className="h-16 w-16 object-contain border border-gray-200 rounded p-1 shadow-sm" />
+                <button type="button" onClick={() => setLogoBase64("")} className="text-xs text-red-500 hover:underline mt-1">Quitar logo</button>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">N° de Packing List</label>
@@ -303,7 +346,6 @@ export default function ListaEmpaque() {
 
           <div className="bg-white p-5 rounded-lg border-2 border-dashed border-slate-300 shadow-inner">
             <h3 className="text-lg font-bold text-slate-800 mb-4 border-b border-slate-200 pb-2">Condiciones de Embarque</h3>
-            {/* Se reestructuraron las columnas para ocupar el espacio del campo eliminado */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Incoterm:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} required /></div>
               <div className="md:col-span-1"><label className="block text-xs font-bold text-gray-700 mb-1 uppercase">Forma de Pago:</label><input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-slate-500" value={formaPago} onChange={(e) => setFormaPago(e.target.value)} required /></div>
@@ -312,7 +354,6 @@ export default function ListaEmpaque() {
             </div>
           </div>
 
-          {/* TABLA DE PRODUCTOS - DISEÑO MEJORADO SIN COLUMNA DE BORRAR */}
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Detalle de la Carga</h3>
@@ -321,7 +362,6 @@ export default function ListaEmpaque() {
               </button>
             </div>
             
-            {/* Encabezado Principal (Solo 11 Columnas, sin botón de borrar) */}
             <div className="flex items-center gap-2 mb-2">
               <div className="hidden md:grid grid-cols-11 gap-2 bg-slate-700 text-white p-2 rounded-md text-[10px] font-bold text-center items-center w-full shadow-sm">
                 <div className="col-span-1 uppercase">Ref.</div>
@@ -333,15 +373,11 @@ export default function ListaEmpaque() {
                 <div className="col-span-1 uppercase">m³ / Caja</div>
                 <div className="col-span-1 uppercase">Total m³</div>
               </div>
-              {/* Espaciador invisible para alinear la cabecera con los botones "X" inferiores */}
               <div className="w-8 shrink-0 hidden md:block"></div> 
             </div>
 
-            {/* Filas de Datos */}
             {productos.map((producto, index) => (
               <div key={index} className="flex flex-col md:flex-row items-start md:items-center gap-2 mb-2">
-                
-                {/* Cuadrícula de Inputs */}
                 <div className="grid grid-cols-1 md:grid-cols-11 gap-2 border border-gray-300 bg-white p-4 md:p-2 rounded-md shadow-sm w-full">
                   <div className="md:col-span-1">
                     <label className="md:hidden block text-[10px] font-bold text-gray-500 mb-1 uppercase">Referencia:</label>
@@ -386,7 +422,6 @@ export default function ListaEmpaque() {
                   </div>
                 </div>
 
-                {/* Botón flotante para eliminar (A un ladito) */}
                 <div className="w-full md:w-8 shrink-0 flex justify-end md:justify-center mt-2 md:mt-0">
                   {productos.length > 1 ? (
                     <button 
