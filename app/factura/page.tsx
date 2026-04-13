@@ -17,6 +17,10 @@ export default function FacturaComercial() {
   const [numeroPedido, setNumeroPedido] = useState(""); 
   const [fechaElaboracion, setFechaElaboracion] = useState("");
 
+  // --- PUERTOS ---
+  const [puertoSalida, setPuertoSalida] = useState("");
+  const [puertoDestino, setPuertoDestino] = useState("");
+
   // --- DATOS DE IDENTIFICACIÓN: EXPORTADOR (TÚ) ---
   const [expRazonSocial, setExpRazonSocial] = useState("");
   const [expEmail, setExpEmail] = useState("");
@@ -35,7 +39,7 @@ export default function FacturaComercial() {
 
   // --- DETALLE DE PRODUCTOS ---
   const [productos, setProductos] = useState([
-    { cantidad: "", descripcion: "", precioUnitario: "" }
+    { cantidad: "", descripcion: "", precioUnitario: "", pesoNeto: "", pesoBruto: "" }
   ]);
 
   // --- CONDICIONES Y PAGO ---
@@ -54,7 +58,7 @@ export default function FacturaComercial() {
 
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
-    const borradorGuardado = sessionStorage.getItem("borrador_factura_comercial_v3");
+    const borradorGuardado = sessionStorage.getItem("borrador_factura_comercial_v4");
     let factActual = "";
 
     if (borradorGuardado) {
@@ -65,6 +69,8 @@ export default function FacturaComercial() {
       
       setNumeroPedido(datos.numeroPedido || "");
       setFechaElaboracion(datos.fechaElaboracion || "");
+      setPuertoSalida(datos.puertoSalida || "");
+      setPuertoDestino(datos.puertoDestino || "");
       
       setExpRazonSocial(datos.expRazonSocial || "");
       setExpEmail(datos.expEmail || "");
@@ -106,14 +112,14 @@ export default function FacturaComercial() {
   useEffect(() => {
     if (numeroFactura) {
       const borradorActual = {
-        numeroFactura, logoBase64, numeroPedido, fechaElaboracion, 
+        numeroFactura, logoBase64, numeroPedido, fechaElaboracion, puertoSalida, puertoDestino,
         expRazonSocial, expEmail, expTelefono, expNit, expDireccion, expCiudadPais,
         impRazonSocial, impEmail, impTelefono, impNit, impDireccion, impCiudadPais,
         productos, condicionesPago, incoterm, ciudadIncoterm,
         fleteNacionalOrigen, gastosExportacion, fleteInternacional, seguro, 
         movimientoContenedor, fleteNacionalDestino, gastosImportacion
       };
-      sessionStorage.setItem("borrador_factura_comercial_v3", JSON.stringify(borradorActual));
+      sessionStorage.setItem("borrador_factura_comercial_v4", JSON.stringify(borradorActual));
     }
   });
 
@@ -129,7 +135,7 @@ export default function FacturaComercial() {
   };
 
   const agregarProducto = () => {
-    setProductos([...productos, { cantidad: "", descripcion: "", precioUnitario: "" }]);
+    setProductos([...productos, { cantidad: "", descripcion: "", precioUnitario: "", pesoNeto: "", pesoBruto: "" }]);
   };
 
   const actualizarProducto = (index: number, campo: string, valor: string) => {
@@ -169,19 +175,21 @@ export default function FacturaComercial() {
     doc.setTextColor(37, 99, 235); // Azul Factura Comercial
     doc.text("FACTURA COMERCIAL", 190, 22, { align: "right" });
     
-    // Aquí ubicamos el bloque de referencias a la derecha, debajo del título
+    // Referencias a la derecha
     doc.setFontSize(10);
     doc.setTextColor(50, 50, 50);
     doc.setFont("helvetica", "normal");
     doc.text(`N° Factura: ${numeroFactura}`, 190, 30, { align: "right" });
     doc.text(`N° de pedido (PO): ${numeroPedido}`, 190, 36, { align: "right" });
     doc.text(`Fecha elaboración: ${fechaElaboracion}`, 190, 42, { align: "right" });
+    doc.text(`Puerto de Salida: ${puertoSalida}`, 190, 48, { align: "right" });
+    doc.text(`Puerto de Destino: ${puertoDestino}`, 190, 54, { align: "right" });
 
     // --- LÍNEA DIVISORIA DINÁMICA ---
-    const lineY = Math.max(empresaY + 12, 50);
+    const lineY = Math.max(empresaY + 12, 60);
     doc.line(20, lineY, 190, lineY);
     
-    // --- BLOQUE DE COLUMNAS (CORREGIDO) ---
+    // --- BLOQUE DE COLUMNAS ---
     doc.setFont("helvetica", "bold");
     doc.text("Exportador:", 20, lineY + 7);
     doc.setFont("helvetica", "normal");
@@ -192,7 +200,7 @@ export default function FacturaComercial() {
     doc.text(`Email: ${expEmail}`, 20, lineY + 37);
     doc.text(`Tel: ${expTelefono}`, 20, lineY + 43);
 
-    // Importador hacia la derecha (CORREGIDO)
+    // Importador hacia la derecha 
     doc.setFont("helvetica", "bold");
     doc.text("Importador:", 105, lineY + 7);
     doc.setFont("helvetica", "normal");
@@ -205,7 +213,7 @@ export default function FacturaComercial() {
 
     // --- TABLA DE PRODUCTOS ---
     const startTablaY = lineY + 52;
-    const columnas = ["CANT.", "DESCRIPCIÓN", "PRECIO UNITARIO", "IMPORTE"];
+    const columnas = ["CANT.", "DESCRIPCIÓN", "P. NETO", "P. BRUTO", "PRECIO UNIT.", "IMPORTE"];
     let subtotalProductos = 0;
 
     const filas = productos.map((prod) => {
@@ -214,6 +222,8 @@ export default function FacturaComercial() {
       return [
         prod.cantidad,
         prod.descripcion,
+        `${prod.pesoNeto || '0'} Kg`,
+        `${prod.pesoBruto || '0'} Kg`,
         `$${Number(prod.precioUnitario).toFixed(2)}`,
         `$${importe.toFixed(2)}`
       ];
@@ -225,8 +235,14 @@ export default function FacturaComercial() {
       body: filas,
       theme: 'grid',
       headStyles: { fillColor: [37, 99, 235], textColor: 255 }, // Azul Factura Comercial
-      styles: { fontSize: 9, cellPadding: 3 },
-      columnStyles: { 0: { halign: 'center' }, 2: { halign: 'right' }, 3: { halign: 'right' } }
+      styles: { fontSize: 8, cellPadding: 2 },
+      columnStyles: { 
+        0: { halign: 'center' }, 
+        2: { halign: 'center' }, 
+        3: { halign: 'center' }, 
+        4: { halign: 'right' }, 
+        5: { halign: 'right' } 
+      }
     });
 
     // --- DESGLOSE DE TOTALES Y COSTOS INCOTERM ---
@@ -256,7 +272,7 @@ export default function FacturaComercial() {
       }
     };
 
-    // Cascada de Incoterms actualizada
+    // Cascada de Incoterms 
     if (incoterm !== "EXW") {
       agregarFilaCosto("Flete Nac. Origen:", fleteNacionalOrigen);
       agregarFilaCosto("Gastos de Exportación:", gastosExportacion);
@@ -376,6 +392,16 @@ export default function FacturaComercial() {
               <label className="block text-xs font-bold text-gray-700 mb-1">Fecha de Elaboración</label>
               <input type="date" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" value={fechaElaboracion} onChange={(e) => setFechaElaboracion(e.target.value)} required />
             </div>
+            
+            {/* NUEVOS CAMPOS: Puertos */}
+            <div className="md:col-span-1">
+              <label className="block text-xs font-bold text-gray-700 mb-1">Puerto de Salida</label>
+              <input type="text" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Buenaventura, Colombia" value={puertoSalida} onChange={(e) => setPuertoSalida(e.target.value)} required />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-gray-700 mb-1">Puerto de Destino</label>
+              <input type="text" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Callao, Perú" value={puertoDestino} onChange={(e) => setPuertoDestino(e.target.value)} required />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -443,7 +469,7 @@ export default function FacturaComercial() {
           <div>
             <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Detalles de venta (Productos)</h3>
             {productos.map((producto, index) => (
-              <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-3 items-end relative bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-3 items-end relative bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <span className="absolute -top-3 -left-3 bg-blue-600 text-white w-8 h-8 flex items-center justify-center rounded-full font-bold shadow-md z-10">
                   {index + 1}
                 </span>
@@ -459,16 +485,27 @@ export default function FacturaComercial() {
                   </button>
                 )}
 
-                <div className="md:col-span-1">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">CANTIDAD</label>
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-bold text-gray-700 mb-1">CANTIDAD</label>
                   <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={producto.cantidad} onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)} required />
                 </div>
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">DESCRIPCIÓN</label>
+                <div className="md:col-span-4">
+                  <label className="block text-[10px] font-bold text-gray-700 mb-1">DESCRIPCIÓN</label>
                   <input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={producto.descripcion} onChange={(e) => actualizarProducto(index, 'descripcion', e.target.value)} required />
                 </div>
-                <div className="md:col-span-1">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">PRECIO UNITARIO (USD)</label>
+                
+                {/* NUEVOS CAMPOS DE PESOS EN PRODUCTOS */}
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-bold text-gray-700 mb-1">P. NETO (Kg)</label>
+                  <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={producto.pesoNeto} onChange={(e) => actualizarProducto(index, 'pesoNeto', e.target.value)} required />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-bold text-gray-700 mb-1">P. BRUTO (Kg)</label>
+                  <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={producto.pesoBruto} onChange={(e) => actualizarProducto(index, 'pesoBruto', e.target.value)} required />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-[10px] font-bold text-gray-700 mb-1">P. UNITARIO ($)</label>
                   <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={producto.precioUnitario} onChange={(e) => actualizarProducto(index, 'precioUnitario', e.target.value)} required />
                 </div>
               </div>
