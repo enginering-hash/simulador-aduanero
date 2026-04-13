@@ -34,7 +34,7 @@ export default function OrdenDeCompra() {
   const [lugarEntrega, setLugarEntrega] = useState("");
   const [condicionesPago, setCondicionesPago] = useState("");
   const [incoterm, setIncoterm] = useState("");
-  const [lugarIncoterm, setLugarIncoterm] = useState(""); // NUEVO ESTADO
+  const [lugarIncoterm, setLugarIncoterm] = useState(""); 
 
   // --- DETALLE DE LA COMPRA ---
   const [productos, setProductos] = useState([
@@ -70,7 +70,7 @@ export default function OrdenDeCompra() {
       setLugarEntrega(datos.lugarEntrega || "");
       setCondicionesPago(datos.condicionesPago || "");
       setIncoterm(datos.incoterm || "");
-      setLugarIncoterm(datos.lugarIncoterm || ""); // Cargar nuevo estado
+      setLugarIncoterm(datos.lugarIncoterm || ""); 
       if (datos.productos && datos.productos.length > 0) setProductos(datos.productos);
     } 
 
@@ -90,7 +90,7 @@ export default function OrdenDeCompra() {
         numeroOrden, logoBase64,
         impRazonSocial, impEmail, impTelefono, impNit, impDireccion, impCiudadPais,
         expRazonSocial, expEmail, expTelefono, expNit, expDireccion, expCiudadPais,
-        fechaEntrega, lugarEntrega, condicionesPago, incoterm, lugarIncoterm, productos // Guardar nuevo estado
+        fechaEntrega, lugarEntrega, condicionesPago, incoterm, lugarIncoterm, productos 
       };
       sessionStorage.setItem("borrador_orden_compra", JSON.stringify(borradorActual));
     }
@@ -188,7 +188,6 @@ export default function OrdenDeCompra() {
     doc.text(`Incoterm:`, 120, yTerminos + 6);
     doc.setFont("helvetica", "normal");
     
-    // AQUÍ SE UNEN EL INCOTERM Y EL LUGAR DESIGNADO PARA EL PDF
     const textoIncotermFinal = lugarIncoterm ? `${incoterm} ${lugarIncoterm.toUpperCase()}` : incoterm;
     doc.text(textoIncotermFinal, 140, yTerminos + 6);
 
@@ -288,6 +287,13 @@ export default function OrdenDeCompra() {
 
           <div>
             <h3 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">1. Datos de Identificación</h3>
+            
+            {/* NUEVO CAMPO DE ORDEN DE COMPRA EDITABLE */}
+            <div className="mb-6 bg-emerald-50 p-4 rounded-lg border border-emerald-200 flex flex-col sm:flex-row sm:items-center gap-4 shadow-sm">
+               <label className="font-bold text-emerald-800 whitespace-nowrap">N° ÚNICO DE ORDEN (PO):</label>
+               <input type="text" className="w-full sm:w-1/2 border border-emerald-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-gray-800" value={numeroOrden} onChange={(e) => setNumeroOrden(e.target.value)} required />
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               <div className="bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
@@ -321,10 +327,7 @@ export default function OrdenDeCompra() {
               </div>
 
               <div className="bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
-                <div className="flex justify-between items-end border-b border-emerald-200 pb-2 mb-4">
-                  <h4 className="font-bold text-emerald-700">Datos del Exportador</h4>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-1 rounded font-bold">N° ÚNICO DE ORDEN (PO): {numeroOrden}</span>
-                </div>
+                <h4 className="font-bold text-emerald-700 mb-4 border-b border-emerald-200 pb-2">Datos del Exportador</h4>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="sm:col-span-2">
@@ -373,7 +376,6 @@ export default function OrdenDeCompra() {
                 <input type="text" className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ej. 30% Anticipo, 70% contra BL" value={condicionesPago} onChange={(e) => setCondicionesPago(e.target.value)} required />
               </div>
               
-              {/* NUEVA ESTRUCTURA PARA EL INCOTERM Y SU LUGAR */}
               <div className="flex gap-2">
                 <div className="w-1/2">
                     <label className="block text-sm font-bold text-gray-700 mb-1">Incoterm Negociado</label>
@@ -393,7 +395,7 @@ export default function OrdenDeCompra() {
                     </select>
                 </div>
                 <div className="w-1/2">
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Lugar (Incoterm)</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Responsabilidad Incoterm</label>
                     <input type="text" className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ej. Callao" value={lugarIncoterm} onChange={(e) => setLugarIncoterm(e.target.value)} required />
                 </div>
               </div>
