@@ -382,7 +382,13 @@ export default function FacturaComercial() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">N° Factura Comercial</label>
-              <input type="text" className="w-full border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600 font-bold outline-none cursor-not-allowed" value={numeroFactura} readOnly />
+              <input 
+                type="text" 
+                className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-gray-800 bg-white" 
+                value={numeroFactura} 
+                onChange={(e) => setNumeroFactura(e.target.value)} 
+                required 
+              />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">N° de Pedido (PO del Cliente)</label>
@@ -393,7 +399,7 @@ export default function FacturaComercial() {
               <input type="date" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" value={fechaElaboracion} onChange={(e) => setFechaElaboracion(e.target.value)} required />
             </div>
             
-            {/* NUEVOS CAMPOS: Puertos */}
+            {/* CAMPOS DE PUERTOS */}
             <div className="md:col-span-1">
               <label className="block text-xs font-bold text-gray-700 mb-1">Puerto de Salida</label>
               <input type="text" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Buenaventura, Colombia" value={puertoSalida} onChange={(e) => setPuertoSalida(e.target.value)} required />
@@ -494,7 +500,7 @@ export default function FacturaComercial() {
                   <input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={producto.descripcion} onChange={(e) => actualizarProducto(index, 'descripcion', e.target.value)} required />
                 </div>
                 
-                {/* NUEVOS CAMPOS DE PESOS EN PRODUCTOS */}
+                {/* CAMPOS DE PESOS EN PRODUCTOS */}
                 <div className="md:col-span-2">
                   <label className="block text-[10px] font-bold text-gray-700 mb-1">P. NETO (Kg)</label>
                   <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={producto.pesoNeto} onChange={(e) => actualizarProducto(index, 'pesoNeto', e.target.value)} required />
