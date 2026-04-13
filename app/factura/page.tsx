@@ -402,11 +402,11 @@ export default function FacturaComercial() {
             {/* CAMPOS DE PUERTOS */}
             <div className="md:col-span-1">
               <label className="block text-xs font-bold text-gray-700 mb-1">Puerto de Salida</label>
-              <input type="text" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Buenaventura, Colombia" value={puertoSalida} onChange={(e) => setPuertoSalida(e.target.value)} required />
+              <input type="text" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Callao" value={puertoSalida} onChange={(e) => setPuertoSalida(e.target.value)} required />
             </div>
             <div className="md:col-span-2">
               <label className="block text-xs font-bold text-gray-700 mb-1">Puerto de Destino</label>
-              <input type="text" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Callao, Perú" value={puertoDestino} onChange={(e) => setPuertoDestino(e.target.value)} required />
+              <input type="text" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Buenaventura" value={puertoDestino} onChange={(e) => setPuertoDestino(e.target.value)} required />
             </div>
           </div>
 
