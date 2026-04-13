@@ -9,6 +9,9 @@ import { useRouter } from "next/navigation";
 export default function CertificadoLote() {
   const router = useRouter(); 
 
+  // --- LOGO DE LA EMPRESA ---
+  const [logoBase64, setLogoBase64] = useState<string>("");
+
   // --- DATOS GENERALES ---
   const [fechaEmision, setFechaEmision] = useState("");
   const [exportador, setExportador] = useState("");
@@ -28,6 +31,7 @@ export default function CertificadoLote() {
     if (borradorGuardado) {
       const datos = JSON.parse(borradorGuardado);
       setFechaEmision(datos.fechaEmision || hoy);
+      setLogoBase64(datos.logoBase64 || ""); // Recuperar el logo si ya había uno
       setExportador(datos.exportador || "");
       setConsignatario(datos.consignatario || "");
       setDirectorTecnico(datos.directorTecnico || "");
@@ -52,10 +56,22 @@ export default function CertificadoLote() {
   // GUARDAR DATOS EN MEMORIA
   useEffect(() => {
     const borradorActual = {
-      fechaEmision, exportador, consignatario, directorTecnico, lotes
+      fechaEmision, logoBase64, exportador, consignatario, directorTecnico, lotes
     };
     sessionStorage.setItem("borrador_certificado_lote_v2", JSON.stringify(borradorActual));
   });
+
+  // FUNCIÓN PARA SUBIR LOGO
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setLogoBase64(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const agregarLote = () => {
     setLotes([...lotes, { codigo: "", nombre: "", cantidad: "", pesoNeto: "", lote: "", fechaProduccion: "", fechaVencimiento: "", turno: "" }]);
@@ -76,6 +92,12 @@ export default function CertificadoLote() {
     e.preventDefault();
     const doc = new jsPDF("landscape"); // Formato horizontal para que quepan las columnas
 
+    // --- LOGO ---
+    if (logoBase64) {
+      // Posicionamos el logo en la esquina superior izquierda
+      doc.addImage(logoBase64, 20, 10, 25, 25);
+    }
+
     // --- ENCABEZADO ---
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
@@ -88,24 +110,24 @@ export default function CertificadoLote() {
     
     doc.setDrawColor(217, 119, 6);
     doc.setLineWidth(0.5);
-    doc.line(20, 30, 277, 30);
+    doc.line(20, 35, 277, 35); // Bajé la línea a 35 para que no cruce el logo
 
     // --- TÍTULO ---
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
-    doc.text("CERTIFICADO DE LOTE Y PRODUCCIÓN (COA)", 148, 40, { align: "center" });
+    doc.text("CERTIFICADO DE LOTE Y PRODUCCIÓN (COA)", 148, 45, { align: "center" });
 
     // --- DATOS GENERALES ---
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text("Fecha de Emisión:", 20, 50);
+    doc.text("Fecha de Emisión:", 20, 55);
     doc.setFont("helvetica", "normal");
-    doc.text(fechaEmision, 55, 50);
+    doc.text(fechaEmision, 55, 55);
 
     doc.setFont("helvetica", "bold");
-    doc.text("Cliente / Consignatario:", 20, 56);
+    doc.text("Cliente / Consignatario:", 20, 61);
     doc.setFont("helvetica", "normal");
-    doc.text(consignatario.toUpperCase(), 65, 56);
+    doc.text(consignatario.toUpperCase(), 65, 61);
 
     // --- TABLA DE LOTES ---
     const columnas = ["CÓDIGO", "NOMBRE", "CANTIDAD", "PESO NETO", "LOTE", "F. PRODUCCIÓN", "F. VENCIMIENTO", "TURNO"];
@@ -122,7 +144,7 @@ export default function CertificadoLote() {
     ]);
 
     autoTable(doc, {
-      startY: 65,
+      startY: 70, // Ajustado por el cambio de Y en la cabecera
       head: [columnas],
       body: filas,
       theme: 'grid',
@@ -188,6 +210,27 @@ export default function CertificadoLote() {
 
         <form onSubmit={generarPDF} className="p-8 space-y-8">
           
+          {/* UPLOAD DE LOGO */}
+          <div className="bg-white p-4 rounded-lg border-2 border-dashed border-amber-300 flex flex-col md:flex-row items-center gap-6 justify-between">
+            <div>
+              <label className="block text-sm font-bold text-amber-800 mb-2">Añadir Logo de la Empresa (Opcional)</label>
+              <p className="text-xs text-gray-500 mb-3">Dale un toque profesional a tu PDF subiendo el logo del departamento de calidad.</p>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleLogoUpload} 
+                className="text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-bold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200 cursor-pointer" 
+              />
+            </div>
+            {logoBase64 && (
+              <div className="flex flex-col items-center">
+                <span className="text-[10px] text-gray-400 mb-1">Vista Previa</span>
+                <img src={logoBase64} alt="Logo Preview" className="h-16 w-16 object-contain border border-gray-200 rounded p-1 shadow-sm" />
+                <button type="button" onClick={() => setLogoBase64("")} className="text-xs text-red-500 hover:underline mt-1">Quitar logo</button>
+              </div>
+            )}
+          </div>
+
           {/* SECCIÓN 1: DATOS GENERALES */}
           <section className="bg-white p-6 rounded-lg border border-gray-300 shadow-sm">
             <h3 className="font-bold text-amber-800 mb-4 border-b-2 border-amber-100 pb-2">1. DATOS GENERALES</h3>
