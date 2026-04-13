@@ -49,7 +49,7 @@ export default function ListaEmpaque() {
     const hoy = new Date().toISOString().split('T')[0];
     const borradorGuardado = sessionStorage.getItem("borrador_lista_empaque_v8"); 
     
-    const datosFactura = sessionStorage.getItem("borrador_factura_comercial_v3");
+    const datosFactura = sessionStorage.getItem("borrador_factura_comercial_v4"); // Actualizado a v4 por los puertos
     let fData = datosFactura ? JSON.parse(datosFactura) : null;
 
     let plActual = "";
@@ -99,6 +99,8 @@ export default function ListaEmpaque() {
         setImpTelefono(fData.impTelefono || "");
         
         setIncoterm(fData.incoterm || "");
+        setPuertoEmbarque(fData.puertoSalida || "");
+        setPuertoDestino(fData.puertoDestino || "");
         // Intentar recuperar el logo de la factura si existe
         setLogoBase64(fData.logoBase64 || "");
       }
@@ -224,11 +226,13 @@ export default function ListaEmpaque() {
     doc.setFont("helvetica", "normal");
     doc.text(`Incoterm: ${incoterm}`, 20, infoY + 6);
     doc.text(`Forma de Pago: ${formaPago}`, 20, infoY + 12);
+    // Plazo de pago fue eliminado de aquí
     doc.text(`Puerto Origen: ${puertoEmbarque}`, 20, infoY + 18);
     doc.text(`Puerto Destino: ${puertoDestino}`, 20, infoY + 24);
     
+    // Resumen de Carga eliminado, la tabla sube para ocupar ese espacio
     // --- TABLA DE PRODUCTOS ---
-    const startTablaY = infoY + 32; 
+    const startTablaY = infoY + 32; // Se subió la tabla
     const columnas = ["ITEM", "REF", "DESCRIPCIÓN / NCM", "P. BRUTO", "P. NETO", "CAJAS", "M3 / CAJA", "TOTAL M3"];
     
     const filas = productos.map((prod, index) => [
@@ -309,7 +313,14 @@ export default function ListaEmpaque() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">N° de Packing List</label>
-              <input type="text" className="w-full border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600 font-bold outline-none cursor-not-allowed" value={numeroLista} readOnly />
+              {/* INPUT EDITABLE PARA N° DE PACKING LIST */}
+              <input 
+                type="text" 
+                className="w-full border border-gray-300 rounded-md p-2 bg-white text-gray-800 font-bold outline-none focus:ring-2 focus:ring-slate-500" 
+                value={numeroLista} 
+                onChange={(e) => setNumeroLista(e.target.value)} 
+                required 
+              />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1 uppercase tracking-wider">Fecha de Emisión</label>
@@ -354,6 +365,7 @@ export default function ListaEmpaque() {
             </div>
           </div>
 
+          {/* TABLA DE PRODUCTOS */}
           <div>
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Detalle de la Carga</h3>
