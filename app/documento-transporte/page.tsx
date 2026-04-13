@@ -5,7 +5,7 @@ import jsPDF from "jspdf";
 import Link from "next/link";
 import { useRouter } from "next/navigation"; 
 
-export default function DocumentoTransporte() {
+export default function DocumentoTransporteExportacion() {
   const router = useRouter(); 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,8 +68,8 @@ export default function DocumentoTransporte() {
 
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
-    // Aumentamos la versión para limpiar caché anterior
-    const borradorGuardado = sessionStorage.getItem("borrador_documento_transporte_esp_v8");
+    // Aumentamos la versión para limpiar caché anterior y que la tabla de carga salga limpia
+    const borradorGuardado = sessionStorage.getItem("borrador_documento_transporte_expo_v2");
 
     if (borradorGuardado) {
       const datos = JSON.parse(borradorGuardado);
@@ -113,21 +113,16 @@ export default function DocumentoTransporte() {
       const opciones = { day: 'numeric', month: 'long', year: 'numeric' } as const;
       const fechaFormateada = hoy.toLocaleDateString('es-ES', opciones);
       
-      setBlNumero(`BL-${Math.floor(10000000 + Math.random() * 90000000)}`);
+      setBlNumero(`BL-EXP-${Math.floor(10000000 + Math.random() * 90000000)}`);
       setShippedOnBoardDate(fechaFormateada); 
 
-      // Heredar datos esenciales de la reserva, pero dejando lo demás en blanco
-      const datosGuardados = localStorage.getItem('datosReserva');
+      // Heredar solo datos esenciales, dejando la sección de Carga (5) 100% en blanco
+      const datosGuardados = localStorage.getItem('datosReservaExpo');
       if (datosGuardados) {
         const parsed = JSON.parse(datosGuardados);
-        
         setSRazonSocial(parsed.shipperNombre || "");
         setCRazonSocial(parsed.consignatarioNombre || "");
-        setDescription(parsed.mercancia || "");
-        
-        if (parsed.contenedores) {
-            setMarksAndNumbers(`Contenedor No:\n${parsed.contenedores}`);
-        }
+        // NOTA: Se eliminó la herencia de "description" y "marksAndNumbers" para que se llenen manualmente.
       }
     }
   }, []);
@@ -144,7 +139,7 @@ export default function DocumentoTransporte() {
       agentContact, totalContainersReceived, freightAmount, freightType, marksAndNumbers,
       noOfPkgs, description, grossWeight, measurement, shippedOnBoardDate
     };
-    sessionStorage.setItem("borrador_documento_transporte_esp_v8", JSON.stringify(borradorActual));
+    sessionStorage.setItem("borrador_documento_transporte_expo_v2", JSON.stringify(borradorActual));
   });
 
   // Manejador de subida de logo cuadrado
@@ -378,7 +373,7 @@ export default function DocumentoTransporte() {
 
     doc.text("El contrato evidenciado en este documento se rige por el derecho marítimo internacional.", 12, 280);
 
-    doc.save(`Documento_Transporte_${blNumero}.pdf`);
+    doc.save(`Documento_Transporte_Exportacion_${blNumero}.pdf`);
   };
 
   return (
@@ -400,7 +395,7 @@ export default function DocumentoTransporte() {
         
         <div className="bg-blue-50 p-6 border-b border-blue-200 flex justify-between items-center">
           <div>
-            <h2 className="font-black text-2xl text-blue-900 uppercase tracking-tight">Documento de Transporte (B/L)</h2>
+            <h2 className="font-black text-2xl text-blue-900 uppercase tracking-tight">Documento de Transporte (B/L) - Exportación</h2>
             <p className="text-sm text-blue-700 font-medium">Contrato de transporte y título de propiedad de la mercancía. Totalmente editable.</p>
           </div>
           <div className="bg-white p-2 border border-blue-200 font-mono text-sm font-bold text-blue-800 shadow-sm">
@@ -512,7 +507,7 @@ export default function DocumentoTransporte() {
                 <h3 className="font-bold text-blue-800 border-b pb-1 text-xs uppercase">3. Detalles Administrativos</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div><label className="block text-[10px] font-bold text-gray-500">LISTA DE EMPAQUE NO.:</label><input type="text" className="w-full border p-2 text-xs rounded outline-none" value={packingListNo} onChange={(e)=>setPackingListNo(e.target.value)} /></div>
-                  <div><label className="block text-[10px] font-bold text-gray-500">INCOTERM (Terms of Sale):</label><input type="text" className="w-full border p-2 text-xs rounded outline-none" placeholder="Ej. FOB (2020)" value={termsOfSale} onChange={(e)=>setTermsOfSale(e.target.value)} required /></div>
+                  <div><label className="block text-[10px] font-bold text-gray-500">INCOTERM (Terms of Sale):</label><input type="text" className="w-full border p-2 text-xs rounded outline-none" placeholder="Ej. FOB" value={termsOfSale} onChange={(e)=>setTermsOfSale(e.target.value)} required /></div>
                   
                   <div className="col-span-2"><label className="block text-[10px] font-bold text-gray-500">FLETES PAGADEROS POR:</label><input type="text" className="w-full border p-2 text-xs rounded outline-none" value={freightPayableBy} onChange={(e)=>setFreightPayableBy(e.target.value)} required /></div>
                   
@@ -565,7 +560,7 @@ export default function DocumentoTransporte() {
             <button type="submit" className="flex-1 bg-blue-700 text-white font-bold py-4 rounded shadow-lg hover:bg-blue-800 transition-all text-lg border-b-4 border-blue-900">
               📥 Descargar B/L en Español Profesional (PDF)
             </button>
-            <Link href="/declaracion-cambio" className="flex-1 bg-indigo-600 text-white font-bold py-4 rounded shadow-lg hover:bg-indigo-700 text-center text-lg border-b-4 border-indigo-800 flex items-center justify-center">
+            <Link href="/declaracion-cambio-exportacion" className="flex-1 bg-indigo-600 text-white font-bold py-4 rounded shadow-lg hover:bg-indigo-700 text-center text-lg border-b-4 border-indigo-800 flex items-center justify-center">
               Paso Final: Declaración de Cambio →
             </Link>
           </div>
