@@ -34,6 +34,7 @@ export default function OrdenDeCompra() {
   const [lugarEntrega, setLugarEntrega] = useState("");
   const [condicionesPago, setCondicionesPago] = useState("");
   const [incoterm, setIncoterm] = useState("");
+  const [lugarIncoterm, setLugarIncoterm] = useState(""); // NUEVO ESTADO
 
   // --- DETALLE DE LA COMPRA ---
   const [productos, setProductos] = useState([
@@ -69,6 +70,7 @@ export default function OrdenDeCompra() {
       setLugarEntrega(datos.lugarEntrega || "");
       setCondicionesPago(datos.condicionesPago || "");
       setIncoterm(datos.incoterm || "");
+      setLugarIncoterm(datos.lugarIncoterm || ""); // Cargar nuevo estado
       if (datos.productos && datos.productos.length > 0) setProductos(datos.productos);
     } 
 
@@ -88,7 +90,7 @@ export default function OrdenDeCompra() {
         numeroOrden, logoBase64,
         impRazonSocial, impEmail, impTelefono, impNit, impDireccion, impCiudadPais,
         expRazonSocial, expEmail, expTelefono, expNit, expDireccion, expCiudadPais,
-        fechaEntrega, lugarEntrega, condicionesPago, incoterm, productos
+        fechaEntrega, lugarEntrega, condicionesPago, incoterm, lugarIncoterm, productos // Guardar nuevo estado
       };
       sessionStorage.setItem("borrador_orden_compra", JSON.stringify(borradorActual));
     }
@@ -185,7 +187,10 @@ export default function OrdenDeCompra() {
     doc.setFont("helvetica", "bold");
     doc.text(`Incoterm:`, 120, yTerminos + 6);
     doc.setFont("helvetica", "normal");
-    doc.text(incoterm, 140, yTerminos + 6);
+    
+    // AQUÍ SE UNEN EL INCOTERM Y EL LUGAR DESIGNADO PARA EL PDF
+    const textoIncotermFinal = lugarIncoterm ? `${incoterm} ${lugarIncoterm.toUpperCase()}` : incoterm;
+    doc.text(textoIncotermFinal, 140, yTerminos + 6);
 
     // --- TABLA DE PRODUCTOS (DETALLE DE LA COMPRA) ---
     const columnas = ["Ítem", "Descripción del Producto", "Cantidad", "Precio Unit. (USD)", "Total (USD)"];
@@ -360,30 +365,39 @@ export default function OrdenDeCompra() {
                 <input type="date" className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none" value={fechaEntrega} onChange={(e) => setFechaEntrega(e.target.value)} required />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Lugar de Entrega</label>
-                <input type="text" className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ej. Puerto de Buenaventura" value={lugarEntrega} onChange={(e) => setLugarEntrega(e.target.value)} required />
+                <label className="block text-sm font-bold text-gray-700 mb-1">Lugar de Entrega Físico (Bodega)</label>
+                <input type="text" className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ej. Bodega Principal Bogotá" value={lugarEntrega} onChange={(e) => setLugarEntrega(e.target.value)} required />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">Condiciones de Pago</label>
                 <input type="text" className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ej. 30% Anticipo, 70% contra BL" value={condicionesPago} onChange={(e) => setCondicionesPago(e.target.value)} required />
               </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Incoterm Negociado</label>
-                <select className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} required>
-                  <option value="" disabled>Selecciona un Incoterm...</option>
-                  <option value="EXW">EXW - Ex Works</option>
-                  <option value="FCA">FCA - Free Carrier</option>
-                  <option value="FAS">FAS - Free Alongside Ship</option>
-                  <option value="FOB">FOB - Free On Board</option>
-                  <option value="CFR">CFR - Cost and Freight</option>
-                  <option value="CIF">CIF - Cost, Insurance and Freight</option>
-                  <option value="CPT">CPT - Carriage Paid To</option>
-                  <option value="CIP">CIP - Carriage and Insurance Paid To</option>
-                  <option value="DAP">DAP - Delivered At Place</option>
-                  <option value="DPU">DPU - Delivered at Place Unloaded</option>
-                  <option value="DDP">DDP - Delivered Duty Paid</option>
-                </select>
+              
+              {/* NUEVA ESTRUCTURA PARA EL INCOTERM Y SU LUGAR */}
+              <div className="flex gap-2">
+                <div className="w-1/2">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Incoterm Negociado</label>
+                    <select className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} required>
+                      <option value="" disabled>Selecciona...</option>
+                      <option value="EXW">EXW - Ex Works</option>
+                      <option value="FCA">FCA - Free Carrier</option>
+                      <option value="FAS">FAS - Free Alongside Ship</option>
+                      <option value="FOB">FOB - Free On Board</option>
+                      <option value="CFR">CFR - Cost and Freight</option>
+                      <option value="CIF">CIF - Cost, Insurance and Freight</option>
+                      <option value="CPT">CPT - Carriage Paid To</option>
+                      <option value="CIP">CIP - Carriage and Insurance Paid To</option>
+                      <option value="DAP">DAP - Delivered At Place</option>
+                      <option value="DPU">DPU - Delivered at Place Unloaded</option>
+                      <option value="DDP">DDP - Delivered Duty Paid</option>
+                    </select>
+                </div>
+                <div className="w-1/2">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Lugar (Incoterm)</label>
+                    <input type="text" className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ej. Callao" value={lugarIncoterm} onChange={(e) => setLugarIncoterm(e.target.value)} required />
+                </div>
               </div>
+
             </div>
           </div>
 
