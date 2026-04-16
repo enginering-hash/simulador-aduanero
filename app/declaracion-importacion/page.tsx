@@ -561,30 +561,71 @@ export default function DeclaracionImportacion() {
         
         <form onSubmit={generarPDF} className="border-4 border-green-700 p-2">
           
-          {/* HEADER FORMULARIO CON LOGO */}
-          <div className="grid grid-cols-12 gap-2 border-b-4 border-green-700 pb-2 mb-2 items-center">
-            <div className="col-span-12 md:col-span-7 flex items-center gap-4">
-               {/* IMAGEN DEL LOGO DE LA DIAN */}
-               <img 
-                 src="/logo_dian2.png" 
-                 alt="Logo DIAN" 
-                 className="h-12 object-contain" 
-                 onError={(e) => {
-                   e.currentTarget.style.display = 'none';
-                   const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
-                   if (nextSibling && nextSibling.id === "fallback-logo") {
-                     nextSibling.style.display = 'flex';
-                   }
-                 }} 
-               />
-               <div id="fallback-logo" className="hidden bg-black text-white rounded-full w-12 h-12 items-center justify-center font-bold text-xs text-center leading-tight">Logo<br/>DIAN</div>
-               <h1 className="text-2xl font-bold">Declaración de Importación</h1>
+          {/* HEADER FORMULARIO REDISEÑADO TIPO DIAN OFICIAL */}
+          <div className="border-b-2 border-green-700 flex flex-col mb-2">
+            
+            {/* Fila 1: Logos y Título */}
+            <div className="flex border-b-2 border-green-700 items-stretch min-h-[60px]">
+              <div className="w-1/4 p-2 flex items-center justify-center border-r-2 border-green-700">
+                <img 
+                  src="/logo_dian2.png" 
+                  alt="DIAN" 
+                  className="h-10 object-contain" 
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    const nextSibling = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (nextSibling) nextSibling.style.display = 'flex';
+                  }} 
+                />
+                <div className="hidden bg-black text-white rounded-full w-12 h-12 items-center justify-center font-bold text-xs text-center leading-tight">Logo<br/>DIAN</div>
+              </div>
+              <div className="w-2/4 p-2 flex items-center justify-center border-r-2 border-green-700">
+                <h1 className="text-2xl font-bold text-black text-center leading-tight">Declaración de Importación</h1>
+              </div>
+              <div className="w-1/4 flex items-stretch">
+                <div className="flex-1 flex flex-col items-center justify-center p-1 border-r-2 border-green-700">
+                  <div className="text-[10px] text-green-700 font-bold uppercase tracking-widest text-center">M U I S C A</div>
+                  <div className="text-[5px] text-gray-500 text-center leading-none mt-1 hidden md:block">Modelo Único de Ingresos, Servicio y Control Automatizado</div>
+                </div>
+                <div className="bg-green-700 text-white flex items-center justify-center text-4xl font-bold w-20 shrink-0">
+                  500
+                </div>
+              </div>
             </div>
-            <div className="col-span-12 md:col-span-5 grid grid-cols-2 gap-2">
-                <Field num="1" label="Año" value={anio} onChange={(e:any)=>setAnio(e.target.value)} />
-                <div className="bg-green-700 text-white flex items-center justify-center text-4xl font-bold">500</div>
-                <Field num="4" label="Número de formulario" value={numFormulario} onChange={(e:any)=>setNumFormulario(e.target.value)} colSpan={2} />
+
+            {/* Fila 2: Espacio Reservado, Año y Formulario */}
+            <div className="flex">
+              <div className="w-[60%] p-2 border-r-2 border-green-700 min-h-[80px]">
+                <span className="text-[10px] text-gray-500">Espacio reservado para la DIAN</span>
+              </div>
+              <div className="w-[40%] flex flex-col">
+                <div className="flex border-b-2 border-green-700">
+                  <div className="w-1/2 p-1 flex items-center gap-2 border-r-2 border-green-700 bg-green-50/30">
+                    <span className="text-[10px] text-green-800 font-bold ml-1">1. Año</span>
+                    <input type="text" className="w-12 border border-green-700 text-sm font-bold text-center outline-none tracking-widest bg-white" value={anio} onChange={(e)=>setAnio(e.target.value)} maxLength={4} />
+                  </div>
+                  <div className="w-1/2 bg-green-50/30"></div>
+                </div>
+                <div className="p-2 flex flex-col flex-1 bg-green-50/30 items-center justify-center">
+                  <div className="w-full text-[10px] text-green-800 font-bold mb-1">4. Número de formulario</div>
+                  <input type="text" className="w-full text-xl md:text-2xl font-bold outline-none bg-transparent text-center" value={numFormulario} onChange={(e)=>setNumFormulario(e.target.value)} />
+                  <div className="w-full mt-1">
+                    <svg width="100%" height="30" preserveAspectRatio="none">
+                      <pattern id="barcode" patternUnits="userSpaceOnUse" width="16" height="30">
+                        <rect x="0" y="0" width="2" height="30" fill="black" />
+                        <rect x="3" y="0" width="1" height="30" fill="black" />
+                        <rect x="5" y="0" width="3" height="30" fill="black" />
+                        <rect x="10" y="0" width="2" height="30" fill="black" />
+                        <rect x="14" y="0" width="1" height="30" fill="black" />
+                      </pattern>
+                      <rect width="100%" height="100%" fill="url(#barcode)" />
+                    </svg>
+                    <div className="text-[7px] text-gray-600 mt-1 text-center font-mono">(415)7707212489984(8020)0500600000000 0</div>
+                  </div>
+                </div>
+              </div>
             </div>
+            
           </div>
 
           {/* IMPORTADOR */}
