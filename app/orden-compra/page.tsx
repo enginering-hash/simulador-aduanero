@@ -35,6 +35,9 @@ export default function OrdenDeCompra() {
   const [condicionesPago, setCondicionesPago] = useState("");
   const [incoterm, setIncoterm] = useState("");
   const [lugarIncoterm, setLugarIncoterm] = useState(""); 
+  
+  // --- MONEDA DE NEGOCIACIÓN ---
+  const [moneda, setMoneda] = useState("USD");
 
   // --- DETALLE DE LA COMPRA ---
   const [productos, setProductos] = useState([
@@ -50,7 +53,7 @@ export default function OrdenDeCompra() {
       const datos = JSON.parse(borradorGuardado);
       poActual = datos.numeroOrden || "";
       
-      setLogoBase64(datos.logoBase64 || ""); // Cargar Logo
+      setLogoBase64(datos.logoBase64 || ""); 
       
       setImpRazonSocial(datos.impRazonSocial || "Estudiante de Comercio Exterior S.A.");
       setImpEmail(datos.impEmail || "");
@@ -71,6 +74,8 @@ export default function OrdenDeCompra() {
       setCondicionesPago(datos.condicionesPago || "");
       setIncoterm(datos.incoterm || "");
       setLugarIncoterm(datos.lugarIncoterm || ""); 
+      setMoneda(datos.moneda || "USD"); // Cargar Moneda
+
       if (datos.productos && datos.productos.length > 0) setProductos(datos.productos);
     } 
 
@@ -90,7 +95,7 @@ export default function OrdenDeCompra() {
         numeroOrden, logoBase64,
         impRazonSocial, impEmail, impTelefono, impNit, impDireccion, impCiudadPais,
         expRazonSocial, expEmail, expTelefono, expNit, expDireccion, expCiudadPais,
-        fechaEntrega, lugarEntrega, condicionesPago, incoterm, lugarIncoterm, productos 
+        fechaEntrega, lugarEntrega, condicionesPago, incoterm, lugarIncoterm, moneda, productos 
       };
       sessionStorage.setItem("borrador_orden_compra", JSON.stringify(borradorActual));
     }
@@ -124,10 +129,29 @@ export default function OrdenDeCompra() {
     setProductos(nuevosProductos);
   };
 
+  // Helper para obtener el símbolo de la moneda
+  const obtenerSimboloMoneda = (codigo: string) => {
+    const simbolos: Record<string, string> = {
+      USD: "$",
+      EUR: "€",
+      JPY: "¥",
+      GBP: "£",
+      CNY: "¥",
+      CAD: "CA$",
+      AUD: "A$",
+      CHF: "CHF ",
+      BRL: "R$",
+      RUB: "₽",
+      COP: "$"
+    };
+    return simbolos[codigo] || "$";
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault(); 
     
     const doc = new jsPDF();
+    const simbolo = obtenerSimboloMoneda(moneda);
 
     // --- LOGO (SI EXISTE) ---
     if (logoBase64) {
@@ -137,7 +161,7 @@ export default function OrdenDeCompra() {
     // --- ENCABEZADO DE LA ORDEN DE COMPRA ---
     doc.setFontSize(22);
     doc.setFont("helvetica", "bold");
-    doc.setTextColor(16, 185, 129); // Verde esmeralda
+    doc.setTextColor(16, 185, 129);
     doc.text("ORDEN DE COMPRA (PO)", 190, 25, { align: "right" });
 
     // --- FECHAS Y REFERENCIAS ---
@@ -192,7 +216,7 @@ export default function OrdenDeCompra() {
     doc.text(textoIncotermFinal, 140, yTerminos + 6);
 
     // --- TABLA DE PRODUCTOS (DETALLE DE LA COMPRA) ---
-    const columnas = ["Ítem", "Descripción del Producto", "Cantidad", "Precio Unit. (USD)", "Total (USD)"];
+    const columnas = ["Ítem", "Descripción del Producto", "Cantidad", `Precio Unit. (${moneda})`, `Total (${moneda})`];
     
     const filas = productos.map((prod, index) => {
       const subtotal = Number(prod.cantidad) * Number(prod.precioUnitario);
@@ -200,8 +224,8 @@ export default function OrdenDeCompra() {
         index + 1,
         prod.descripcion,
         prod.cantidad,
-        `$${Number(prod.precioUnitario).toFixed(2)}`,
-        `$${subtotal.toFixed(2)}`
+        `${simbolo}${Number(prod.precioUnitario).toFixed(2)}`,
+        `${simbolo}${subtotal.toFixed(2)}`
       ];
     });
 
@@ -222,7 +246,7 @@ export default function OrdenDeCompra() {
     doc.setFont("helvetica", "bold");
     
     doc.text(`TOTAL ORDEN DE COMPRA:`, 150, finalY, { align: "right" });
-    doc.text(`$${totalPO.toFixed(2)} USD`, 190, finalY, { align: "right" });
+    doc.text(`${simbolo}${totalPO.toFixed(2)} ${moneda}`, 190, finalY, { align: "right" });
 
     // --- AUTORIZACIÓN (FIRMA) ---
     doc.line(20, finalY + 30, 80, finalY + 30); 
@@ -288,7 +312,6 @@ export default function OrdenDeCompra() {
           <div>
             <h3 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">1. Datos de Identificación</h3>
             
-            {/* NUEVO CAMPO DE ORDEN DE COMPRA EDITABLE */}
             <div className="mb-6 bg-emerald-50 p-4 rounded-lg border border-emerald-200 flex flex-col sm:flex-row sm:items-center gap-4 shadow-sm">
                <label className="font-bold text-emerald-800 whitespace-nowrap">N° ÚNICO DE ORDEN (PO):</label>
                <input type="text" className="w-full sm:w-1/2 border border-emerald-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-gray-800" value={numeroOrden} onChange={(e) => setNumeroOrden(e.target.value)} required />
@@ -375,8 +398,25 @@ export default function OrdenDeCompra() {
                 <label className="block text-sm font-bold text-gray-700 mb-1">Condiciones de Pago</label>
                 <input type="text" className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Ej. 30% Anticipo, 70% contra BL" value={condicionesPago} onChange={(e) => setCondicionesPago(e.target.value)} required />
               </div>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Moneda de Negociación</label>
+                <select className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white" value={moneda} onChange={(e) => setMoneda(e.target.value)} required>
+                  <option value="USD">USD - Dólar Estadounidense ($)</option>
+                  <option value="EUR">EUR - Euro (€)</option>
+                  <option value="JPY">JPY - Yen Japonés (¥)</option>
+                  <option value="GBP">GBP - Libra Esterlina (£)</option>
+                  <option value="CNY">CNY - Yuan Chino (¥)</option>
+                  <option value="CAD">CAD - Dólar Canadiense (CA$)</option>
+                  <option value="AUD">AUD - Dólar Australiano (A$)</option>
+                  <option value="CHF">CHF - Franco Suizo (CHF)</option>
+                  <option value="BRL">BRL - Real Brasileño (R$)</option>
+                  <option value="RUB">RUB - Rublo Ruso (₽)</option>
+                  <option value="COP">COP - Peso Colombiano ($)</option>
+                </select>
+              </div>
               
-              <div className="flex gap-2">
+              <div className="flex gap-2 md:col-span-2">
                 <div className="w-1/2">
                     <label className="block text-sm font-bold text-gray-700 mb-1">Incoterm Negociado</label>
                     <select className="w-full border border-gray-300 rounded-md p-3 focus:ring-2 focus:ring-emerald-500 outline-none bg-white" value={incoterm} onChange={(e) => setIncoterm(e.target.value)} required>
@@ -434,7 +474,9 @@ export default function OrdenDeCompra() {
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="100" value={producto.cantidad} onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)} required />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Precio Unitario (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">
+                      Precio Unitario ({moneda})
+                    </label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="500" value={producto.precioUnitario} onChange={(e) => actualizarProducto(index, 'precioUnitario', e.target.value)} required />
                   </div>
                 </div>

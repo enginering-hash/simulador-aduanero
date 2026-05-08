@@ -16,6 +16,9 @@ export default function FacturaComercial() {
   const [numeroFactura, setNumeroFactura] = useState("");
   const [numeroPedido, setNumeroPedido] = useState(""); 
   const [fechaElaboracion, setFechaElaboracion] = useState("");
+  
+  // --- MONEDA DE NEGOCIACIÓN ---
+  const [moneda, setMoneda] = useState("USD");
 
   // --- PUERTOS ---
   const [puertoSalida, setPuertoSalida] = useState("");
@@ -69,6 +72,7 @@ export default function FacturaComercial() {
       
       setNumeroPedido(datos.numeroPedido || "");
       setFechaElaboracion(datos.fechaElaboracion || "");
+      setMoneda(datos.moneda || "USD"); // Cargar Moneda
       setPuertoSalida(datos.puertoSalida || "");
       setPuertoDestino(datos.puertoDestino || "");
       
@@ -112,7 +116,7 @@ export default function FacturaComercial() {
   useEffect(() => {
     if (numeroFactura) {
       const borradorActual = {
-        numeroFactura, logoBase64, numeroPedido, fechaElaboracion, puertoSalida, puertoDestino,
+        numeroFactura, logoBase64, numeroPedido, fechaElaboracion, moneda, puertoSalida, puertoDestino,
         expRazonSocial, expEmail, expTelefono, expNit, expDireccion, expCiudadPais,
         impRazonSocial, impEmail, impTelefono, impNit, impDireccion, impCiudadPais,
         productos, condicionesPago, incoterm, ciudadIncoterm,
@@ -150,9 +154,28 @@ export default function FacturaComercial() {
     setProductos(nuevosProductos);
   };
 
+  // Helper para obtener el símbolo de la moneda
+  const obtenerSimboloMoneda = (codigo: string) => {
+    const simbolos: Record<string, string> = {
+      USD: "$",
+      EUR: "€",
+      JPY: "¥",
+      GBP: "£",
+      CNY: "¥",
+      CAD: "CA$",
+      AUD: "A$",
+      CHF: "CHF ",
+      BRL: "R$",
+      RUB: "₽",
+      COP: "$"
+    };
+    return simbolos[codigo] || "$";
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault(); 
     const doc = new jsPDF();
+    const simbolo = obtenerSimboloMoneda(moneda);
 
     if (logoBase64) {
       doc.addImage(logoBase64, 20, 10, 25, 25);
@@ -213,7 +236,7 @@ export default function FacturaComercial() {
 
     // --- TABLA DE PRODUCTOS ---
     const startTablaY = lineY + 52;
-    const columnas = ["CANT.", "DESCRIPCIÓN", "P. NETO", "P. BRUTO", "PRECIO UNIT.", "IMPORTE"];
+    const columnas = ["CANT.", "DESCRIPCIÓN", "P. NETO", "P. BRUTO", `PRECIO UNIT. (${moneda})`, `IMPORTE (${moneda})`];
     let subtotalProductos = 0;
 
     const filas = productos.map((prod) => {
@@ -224,8 +247,8 @@ export default function FacturaComercial() {
         prod.descripcion,
         `${prod.pesoNeto || '0'} Kg`,
         `${prod.pesoBruto || '0'} Kg`,
-        `$${Number(prod.precioUnitario).toFixed(2)}`,
-        `$${importe.toFixed(2)}`
+        `${simbolo}${Number(prod.precioUnitario).toFixed(2)}`,
+        `${simbolo}${importe.toFixed(2)}`
       ];
     });
 
@@ -256,7 +279,7 @@ export default function FacturaComercial() {
     doc.setFont("helvetica", "bold");
     doc.text("Subtotal Productos:", labelX, currY, { align: "right" }); 
     doc.setFont("helvetica", "normal");
-    doc.text(`$${subtotalProductos.toFixed(2)}`, valueX, currY, { align: "right" }); 
+    doc.text(`${simbolo}${subtotalProductos.toFixed(2)}`, valueX, currY, { align: "right" }); 
     currY += 6;
 
     // Helper para imprimir las filas de costos logísticos
@@ -266,7 +289,7 @@ export default function FacturaComercial() {
         doc.setFont("helvetica", "bold");
         doc.text(etiqueta, labelX, currY, { align: "right" });
         doc.setFont("helvetica", "normal");
-        doc.text(`$${numValor.toFixed(2)}`, valueX, currY, { align: "right" });
+        doc.text(`${simbolo}${numValor.toFixed(2)}`, valueX, currY, { align: "right" });
         totalExtras += numValor;
         currY += 6;
       }
@@ -304,7 +327,7 @@ export default function FacturaComercial() {
     
     const textoIncoterm = ciudadIncoterm ? `${incoterm} ${ciudadIncoterm.toUpperCase()}` : incoterm;
     doc.text(`TOTAL ${textoIncoterm}:`, labelX, currY + 2, { align: "right" });
-    doc.text(`$${totalFinal.toFixed(2)}`, valueX, currY + 2, { align: "right" });
+    doc.text(`${simbolo}${totalFinal.toFixed(2)} ${moneda}`, valueX, currY + 2, { align: "right" });
 
     // --- CONDICIONES Y FIRMA ---
     doc.setTextColor(0, 0, 0);
@@ -379,7 +402,7 @@ export default function FacturaComercial() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">N° Factura Comercial</label>
               <input 
@@ -398,9 +421,25 @@ export default function FacturaComercial() {
               <label className="block text-xs font-bold text-gray-700 mb-1">Fecha de Elaboración</label>
               <input type="date" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" value={fechaElaboracion} onChange={(e) => setFechaElaboracion(e.target.value)} required />
             </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Moneda</label>
+              <select className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white font-bold" value={moneda} onChange={(e) => setMoneda(e.target.value)} required>
+                  <option value="USD">USD - Dólar Estadounidense ($)</option>
+                  <option value="EUR">EUR - Euro (€)</option>
+                  <option value="JPY">JPY - Yen Japonés (¥)</option>
+                  <option value="GBP">GBP - Libra Esterlina (£)</option>
+                  <option value="CNY">CNY - Yuan Chino (¥)</option>
+                  <option value="CAD">CAD - Dólar Canadiense (CA$)</option>
+                  <option value="AUD">AUD - Dólar Australiano (A$)</option>
+                  <option value="CHF">CHF - Franco Suizo (CHF)</option>
+                  <option value="BRL">BRL - Real Brasileño (R$)</option>
+                  <option value="RUB">RUB - Rublo Ruso (₽)</option>
+                  <option value="COP">COP - Peso Colombiano ($)</option>
+              </select>
+            </div>
             
-            {/* CAMPOS DE PUERTOS */}
-            <div className="md:col-span-1">
+            {/* CAMPOS DE PUERTOS EN LA SIGUIENTE FILA CENTRADOS */}
+            <div className="md:col-span-2">
               <label className="block text-xs font-bold text-gray-700 mb-1">Puerto de Salida</label>
               <input type="text" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej. Callao" value={puertoSalida} onChange={(e) => setPuertoSalida(e.target.value)} required />
             </div>
@@ -511,7 +550,7 @@ export default function FacturaComercial() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-[10px] font-bold text-gray-700 mb-1">P. UNITARIO ($)</label>
+                  <label className="block text-[10px] font-bold text-gray-700 mb-1">P. UNITARIO ({moneda})</label>
                   <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={producto.precioUnitario} onChange={(e) => actualizarProducto(index, 'precioUnitario', e.target.value)} required />
                 </div>
               </div>
@@ -559,11 +598,11 @@ export default function FacturaComercial() {
               {incoterm !== "EXW" && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nacional Origen (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nacional Origen ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={fleteNacionalOrigen} onChange={(e) => setFleteNacionalOrigen(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Gastos Exportación (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Gastos Exportación ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={gastosExportacion} onChange={(e) => setGastosExportacion(e.target.value)} />
                   </div>
                 </>
@@ -572,7 +611,7 @@ export default function FacturaComercial() {
               {["CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"].includes(incoterm) && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Internacional (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Internacional ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={fleteInternacional} onChange={(e) => setFleteInternacional(e.target.value)} />
                   </div>
                 </>
@@ -581,7 +620,7 @@ export default function FacturaComercial() {
               {["CIF", "CIP", "DAP", "DPU", "DDP"].includes(incoterm) && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Seguro Internacional (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Seguro Internacional ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={seguro} onChange={(e) => setSeguro(e.target.value)} />
                   </div>
                 </>
@@ -590,11 +629,11 @@ export default function FacturaComercial() {
               {["DAP", "DPU", "DDP"].includes(incoterm) && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Movimiento Contenedor Destino (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Movimiento Contenedor Destino ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={movimientoContenedor} onChange={(e) => setMovimientoContenedor(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nac. Destino (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nac. Destino ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={fleteNacionalDestino} onChange={(e) => setFleteNacionalDestino(e.target.value)} />
                   </div>
                 </>
@@ -602,7 +641,7 @@ export default function FacturaComercial() {
 
               {incoterm === "DDP" && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Gastos de Importación (Impuestos) (USD)</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Gastos de Importación (Impuestos) ({moneda})</label>
                   <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-blue-500" value={gastosImportacion} onChange={(e) => setGastosImportacion(e.target.value)} />
                 </div>
               )}

@@ -16,6 +16,9 @@ export default function FacturaProforma() {
   const [numeroProforma, setNumeroProforma] = useState("");
   const [numeroPedido, setNumeroPedido] = useState(""); 
   const [fechaElaboracion, setFechaElaboracion] = useState("");
+  
+  // --- MONEDA DE NEGOCIACIÓN ---
+  const [moneda, setMoneda] = useState("USD");
 
   // --- DATOS DE IDENTIFICACIÓN: EXPORTADOR ---
   const [expRazonSocial, setExpRazonSocial] = useState("");
@@ -65,6 +68,7 @@ export default function FacturaProforma() {
       
       setNumeroPedido(datos.numeroPedido || "");
       setFechaElaboracion(datos.fechaElaboracion || "");
+      setMoneda(datos.moneda || "USD"); // Cargar Moneda
       
       setExpRazonSocial(datos.expRazonSocial || "");
       setExpEmail(datos.expEmail || "");
@@ -106,7 +110,7 @@ export default function FacturaProforma() {
   useEffect(() => {
     if (numeroProforma) {
       const borradorActual = {
-        numeroProforma, logoBase64, numeroPedido, fechaElaboracion, 
+        numeroProforma, logoBase64, numeroPedido, fechaElaboracion, moneda,
         expRazonSocial, expEmail, expTelefono, expNit, expDireccion, expCiudadPais,
         impRazonSocial, impEmail, impTelefono, impNit, impDireccion, impCiudadPais,
         productos, condicionesPago, incoterm, ciudadIncoterm,
@@ -144,9 +148,28 @@ export default function FacturaProforma() {
     setProductos(nuevosProductos);
   };
 
+  // Helper para obtener el símbolo de la moneda
+  const obtenerSimboloMoneda = (codigo: string) => {
+    const simbolos: Record<string, string> = {
+      USD: "$",
+      EUR: "€",
+      JPY: "¥",
+      GBP: "£",
+      CNY: "¥",
+      CAD: "CA$",
+      AUD: "A$",
+      CHF: "CHF ",
+      BRL: "R$",
+      RUB: "₽",
+      COP: "$"
+    };
+    return simbolos[codigo] || "$";
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault(); 
     const doc = new jsPDF();
+    const simbolo = obtenerSimboloMoneda(moneda);
 
     if (logoBase64) {
       doc.addImage(logoBase64, 20, 10, 25, 25);
@@ -203,7 +226,7 @@ export default function FacturaProforma() {
 
     // --- TABLA DE PRODUCTOS ---
     const startTablaY = lineY + 52;
-    const columnas = ["CANT.", "DESCRIPCIÓN", "PRECIO UNITARIO", "IMPORTE"];
+    const columnas = ["CANT.", "DESCRIPCIÓN", `PRECIO UNITARIO (${moneda})`, `IMPORTE (${moneda})`];
     let subtotalProductos = 0;
 
     const filas = productos.map((prod) => {
@@ -212,8 +235,8 @@ export default function FacturaProforma() {
       return [
         prod.cantidad,
         prod.descripcion,
-        `$${Number(prod.precioUnitario).toFixed(2)}`,
-        `$${importe.toFixed(2)}`
+        `${simbolo}${Number(prod.precioUnitario).toFixed(2)}`,
+        `${simbolo}${importe.toFixed(2)}`
       ];
     });
 
@@ -238,7 +261,7 @@ export default function FacturaProforma() {
     doc.setFont("helvetica", "bold");
     doc.text("Subtotal Productos:", labelX, currY, { align: "right" }); 
     doc.setFont("helvetica", "normal");
-    doc.text(`$${subtotalProductos.toFixed(2)}`, valueX, currY, { align: "right" }); 
+    doc.text(`${simbolo}${subtotalProductos.toFixed(2)}`, valueX, currY, { align: "right" }); 
     currY += 6;
 
     // Helper para imprimir las filas de costos logísticos
@@ -248,13 +271,13 @@ export default function FacturaProforma() {
         doc.setFont("helvetica", "bold");
         doc.text(etiqueta, labelX, currY, { align: "right" });
         doc.setFont("helvetica", "normal");
-        doc.text(`$${numValor.toFixed(2)}`, valueX, currY, { align: "right" });
+        doc.text(`${simbolo}${numValor.toFixed(2)}`, valueX, currY, { align: "right" });
         totalExtras += numValor;
         currY += 6;
       }
     };
 
-    // Cascada de Incoterms (Lógica actualizada para todos los incoterms)
+    // Cascada de Incoterms
     if (incoterm !== "EXW") {
       agregarFilaCosto("Flete Nac. Origen:", fleteNacionalOrigen);
       agregarFilaCosto("Gastos de Exportación:", gastosExportacion);
@@ -286,7 +309,7 @@ export default function FacturaProforma() {
     
     const textoIncoterm = ciudadIncoterm ? `${incoterm} ${ciudadIncoterm.toUpperCase()}` : incoterm;
     doc.text(`TOTAL ${textoIncoterm}:`, labelX, currY + 2, { align: "right" });
-    doc.text(`$${totalFinal.toFixed(2)}`, valueX, currY + 2, { align: "right" });
+    doc.text(`${simbolo}${totalFinal.toFixed(2)} ${moneda}`, valueX, currY + 2, { align: "right" });
 
     // --- CONDICIONES Y FIRMA ---
     doc.setTextColor(0, 0, 0);
@@ -362,18 +385,35 @@ export default function FacturaProforma() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+          {/* AJUSTADO A 4 COLUMNAS PARA INCLUIR LA MONEDA */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">N° Factura Proforma</label>
               <input type="text" className="w-full border border-gray-300 rounded-md p-2 bg-gray-100 text-gray-600 font-bold outline-none cursor-not-allowed" value={numeroProforma} readOnly />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">N° de Pedido (PO del Cliente)</label>
+              <label className="block text-xs font-bold text-gray-700 mb-1">N° de Pedido (PO)</label>
               <input type="text" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Ej. PO-2024-4829" value={numeroPedido} onChange={(e) => setNumeroPedido(e.target.value)} required />
             </div>
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">Fecha de Elaboración</label>
               <input type="date" className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-orange-500 outline-none" value={fechaElaboracion} onChange={(e) => setFechaElaboracion(e.target.value)} required />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1">Moneda</label>
+              <select className="w-full border border-gray-300 rounded-md p-2 focus:ring-2 focus:ring-orange-500 outline-none bg-white font-bold" value={moneda} onChange={(e) => setMoneda(e.target.value)} required>
+                  <option value="USD">USD - Dólar Estadounidense ($)</option>
+                  <option value="EUR">EUR - Euro (€)</option>
+                  <option value="JPY">JPY - Yen Japonés (¥)</option>
+                  <option value="GBP">GBP - Libra Esterlina (£)</option>
+                  <option value="CNY">CNY - Yuan Chino (¥)</option>
+                  <option value="CAD">CAD - Dólar Canadiense (CA$)</option>
+                  <option value="AUD">AUD - Dólar Australiano (A$)</option>
+                  <option value="CHF">CHF - Franco Suizo (CHF)</option>
+                  <option value="BRL">BRL - Real Brasileño (R$)</option>
+                  <option value="RUB">RUB - Rublo Ruso (₽)</option>
+                  <option value="COP">COP - Peso Colombiano ($)</option>
+              </select>
             </div>
           </div>
 
@@ -467,7 +507,7 @@ export default function FacturaProforma() {
                   <input type="text" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={producto.descripcion} onChange={(e) => actualizarProducto(index, 'descripcion', e.target.value)} required />
                 </div>
                 <div className="md:col-span-1">
-                  <label className="block text-xs font-bold text-gray-700 mb-1">PRECIO UNITARIO (USD)</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">PRECIO UNITARIO ({moneda})</label>
                   <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={producto.precioUnitario} onChange={(e) => actualizarProducto(index, 'precioUnitario', e.target.value)} required />
                 </div>
               </div>
@@ -515,11 +555,11 @@ export default function FacturaProforma() {
               {incoterm !== "EXW" && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nacional Origen (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nacional Origen ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={fleteNacionalOrigen} onChange={(e) => setFleteNacionalOrigen(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Gastos Exportación (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Gastos Exportación ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={gastosExportacion} onChange={(e) => setGastosExportacion(e.target.value)} />
                   </div>
                 </>
@@ -528,7 +568,7 @@ export default function FacturaProforma() {
               {["CFR", "CIF", "CPT", "CIP", "DAP", "DPU", "DDP"].includes(incoterm) && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Internacional (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Internacional ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={fleteInternacional} onChange={(e) => setFleteInternacional(e.target.value)} />
                   </div>
                 </>
@@ -537,7 +577,7 @@ export default function FacturaProforma() {
               {["CIF", "CIP", "DAP", "DPU", "DDP"].includes(incoterm) && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Seguro Internacional (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Seguro Internacional ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={seguro} onChange={(e) => setSeguro(e.target.value)} />
                   </div>
                 </>
@@ -546,11 +586,11 @@ export default function FacturaProforma() {
               {["DAP", "DPU", "DDP"].includes(incoterm) && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Movimiento Contenedor Destino (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Movimiento Contenedor Destino ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={movimientoContenedor} onChange={(e) => setMovimientoContenedor(e.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nac. Destino (USD)</label>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Flete Nac. Destino ({moneda})</label>
                     <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={fleteNacionalDestino} onChange={(e) => setFleteNacionalDestino(e.target.value)} />
                   </div>
                 </>
@@ -558,7 +598,7 @@ export default function FacturaProforma() {
 
               {incoterm === "DDP" && (
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Gastos de Importación (Impuestos) (USD)</label>
+                  <label className="block text-xs font-bold text-gray-700 mb-1">Gastos de Importación (Impuestos) ({moneda})</label>
                   <input type="number" className="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-2 focus:ring-orange-500" value={gastosImportacion} onChange={(e) => setGastosImportacion(e.target.value)} />
                 </div>
               )}
