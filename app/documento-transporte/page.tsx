@@ -5,7 +5,7 @@ import jsPDF from "jspdf";
 import Link from "next/link";
 import { useRouter } from "next/navigation"; 
 
-export default function DocumentoTransporteExportacion() {
+export default function DocumentoTransporte() {
   const router = useRouter(); 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -68,8 +68,8 @@ export default function DocumentoTransporteExportacion() {
 
   // CARGAR LOS DATOS AL ABRIR LA PÁGINA
   useEffect(() => {
-    // Aumentamos la versión para limpiar caché anterior y que la tabla de carga salga limpia
-    const borradorGuardado = sessionStorage.getItem("borrador_documento_transporte_expo_v2");
+    // Memoria para el flujo de Importación
+    const borradorGuardado = sessionStorage.getItem("borrador_documento_transporte_imp_v10");
 
     if (borradorGuardado) {
       const datos = JSON.parse(borradorGuardado);
@@ -113,11 +113,11 @@ export default function DocumentoTransporteExportacion() {
       const opciones = { day: 'numeric', month: 'long', year: 'numeric' } as const;
       const fechaFormateada = hoy.toLocaleDateString('es-ES', opciones);
       
-      setBlNumero(`BL-EXP-${Math.floor(10000000 + Math.random() * 90000000)}`);
+      setBlNumero(`BL-${Math.floor(10000000 + Math.random() * 90000000)}`);
       setShippedOnBoardDate(fechaFormateada); 
 
-      // Heredar solo datos esenciales, dejando la sección de Carga (5) 100% en blanco
-      const datosGuardados = localStorage.getItem('datosReservaExpo');
+      // Heredar datos esenciales de la reserva de IMPORTACIÓN
+      const datosGuardados = localStorage.getItem('datosReserva');
       if (datosGuardados) {
         const parsed = JSON.parse(datosGuardados);
         setSRazonSocial(parsed.shipperNombre || "");
@@ -139,7 +139,7 @@ export default function DocumentoTransporteExportacion() {
       agentContact, totalContainersReceived, freightAmount, freightType, marksAndNumbers,
       noOfPkgs, description, grossWeight, measurement, shippedOnBoardDate
     };
-    sessionStorage.setItem("borrador_documento_transporte_expo_v2", JSON.stringify(borradorActual));
+    sessionStorage.setItem("borrador_documento_transporte_imp_v10", JSON.stringify(borradorActual));
   });
 
   // Manejador de subida de logo cuadrado
@@ -373,7 +373,8 @@ export default function DocumentoTransporteExportacion() {
 
     doc.text("El contrato evidenciado en este documento se rige por el derecho marítimo internacional.", 12, 280);
 
-    doc.save(`Documento_Transporte_Exportacion_${blNumero}.pdf`);
+    // PDF DE IMPORTACIÓN
+    doc.save(`Documento_Transporte_${blNumero}.pdf`);
   };
 
   return (
@@ -395,7 +396,7 @@ export default function DocumentoTransporteExportacion() {
         
         <div className="bg-blue-50 p-6 border-b border-blue-200 flex justify-between items-center">
           <div>
-            <h2 className="font-black text-2xl text-blue-900 uppercase tracking-tight">Documento de Transporte (B/L) - Exportación</h2>
+            <h2 className="font-black text-2xl text-blue-900 uppercase tracking-tight">Documento de Transporte (B/L)</h2>
             <p className="text-sm text-blue-700 font-medium">Contrato de transporte y título de propiedad de la mercancía. Totalmente editable.</p>
           </div>
           <div className="bg-white p-2 border border-blue-200 font-mono text-sm font-bold text-blue-800 shadow-sm">
@@ -560,8 +561,8 @@ export default function DocumentoTransporteExportacion() {
             <button type="submit" className="flex-1 bg-blue-700 text-white font-bold py-4 rounded shadow-lg hover:bg-blue-800 transition-all text-lg border-b-4 border-blue-900">
               📥 Descargar B/L en Español Profesional (PDF)
             </button>
-            <Link href="/declaracion-cambio-exportacion" className="flex-1 bg-indigo-600 text-white font-bold py-4 rounded shadow-lg hover:bg-indigo-700 text-center text-lg border-b-4 border-indigo-800 flex items-center justify-center">
-              Paso Final: Declaración de Cambio →
+            <Link href="/declaracion-cambio" className="flex-1 bg-green-600 text-white font-bold py-4 rounded shadow-lg hover:bg-green-700 text-center text-lg border-b-4 border-green-800 flex items-center justify-center">
+              Siguiente Paso: Declaración de cambio →
             </Link>
           </div>
 
