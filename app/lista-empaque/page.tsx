@@ -147,15 +147,8 @@ export default function ListaEmpaque() {
     const nuevosProductos = [...productos];
     nuevosProductos[index] = { ...nuevosProductos[index], [campo]: valor };
     
-    // Autocalcular Total m3 si se cambian las cajas o los m3 por caja
-    if (campo === 'cajas' || campo === 'm3PorCaja') {
-      const cantidadCajas = Number(campo === 'cajas' ? valor : nuevosProductos[index].cajas || 0);
-      const metrosPorCaja = Number(campo === 'm3PorCaja' ? valor : nuevosProductos[index].m3PorCaja || 0);
-      if (cantidadCajas > 0 && metrosPorCaja > 0) {
-        nuevosProductos[index].totalM3 = (cantidadCajas * metrosPorCaja).toFixed(3);
-      }
-    }
-
+    // Eliminamos el bloque que calculaba automáticamente el totalM3
+    
     setProductos(nuevosProductos);
   };
 
